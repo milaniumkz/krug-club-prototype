@@ -1,0 +1,21 @@
+# Local settings, credentials and hosting metadata
+.env
+.env.*
+!.env.example
+.openai/
+.aws/
+.codex/
+.agents/
+*.pem
+*.key
+credentials*.json
+
+# Local dependencies, editors and operating systems
+node_modules/
+.venv/
+__pycache__/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

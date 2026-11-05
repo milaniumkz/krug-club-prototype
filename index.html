@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#f6f5f2">
+<title>КРУГ — клубная карта</title><meta name="description" content="Интерактивный дизайн-прототип клуба КРУГ. Членство, партнёры, привилегии и демонстрационная QR-проверка.">
+<link rel="stylesheet" href="styles.css"><link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+<div class="presentation">
+  <aside class="intro">
+    <div class="wordmark"><span class="brand-symbol"></span>КРУГ<span class="small-label">CLUB</span></div>
+    <div class="intro-body"><div class="eyebrow">ВАШ ГОРОД. ВАШ КРУГ.</div><h1>Хорошие места.<br>Особое<br><span>отношение.</span></h1><p>Одна карта для любимых мест.<br>И для тех, что ещё предстоит открыть.</p>
+    <div class="intro-tags"><span>Членство</span><span>Партнёры</span><span>Привилегии</span></div></div>
+    <div class="intro-footer"><span class="tiny-circle"></span><div>Интерактивный дизайн-прототип<br><span>Все данные и QR-проверка демонстрационные</span></div></div>
+  </aside>
+  <div class="device-shell">
+    <div class="device-top" aria-hidden="true"><span>9:41</span><div class="device-island"></div><span class="device-signals">▮▮▮ &nbsp;◒ ▰</span></div>
+    <div class="app" id="app">
+      <header class="app-header"><button class="app-logo" data-action="nav" data-tab="home" aria-label="КРУГ, главная"><span class="brand-symbol"></span>КРУГ</button><span class="demo-badge">ДЕМО</span><button class="avatar" data-action="nav" data-tab="profile" aria-label="Профиль участника">А</button></header>
+      <main id="content" tabindex="-1"></main>
+      <nav class="bottom-nav" aria-label="Основная навигация">
+        <button class="nav-item active" data-action="nav" data-tab="home"><span data-icon="home"></span><span>Главная</span></button>
+        <button class="nav-item" data-action="nav" data-tab="partners"><span data-icon="compass"></span><span>Партнёры</span></button>
+        <button class="nav-item scan-nav" data-action="scan" aria-label="Сканировать QR партнёра"><span data-icon="scan"></span></button>
+        <button class="nav-item" data-action="nav" data-tab="benefits"><span data-icon="gift"></span><span>Выгоды</span></button>
+        <button class="nav-item" data-action="nav" data-tab="profile"><span data-icon="user"></span><span>Профиль</span></button>
+      </nav>
+      <div id="modal-root"></div><div class="toast" id="toast" role="status"></div>
+    </div>
+    <div class="home-indicator" aria-hidden="true"></div>
+  </div>
+  <aside class="side-note"><span class="side-line"></span><span>МЕНЬШЕ ЛИШНЕГО.<br>БОЛЬШЕ ВАШЕГО.</span><div class="side-number">01 / 04</div></aside>
+</div>
+<script src="app.js"></script>
+</body></html>
