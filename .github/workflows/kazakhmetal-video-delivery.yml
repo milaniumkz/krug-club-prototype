@@ -1,0 +1,24 @@
+name: Deliver KazakhMetal Full HD video
+on:
+  push:
+    branches: [kazakhmetal-video-delivery-20261110]
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Assemble byte-identical original video and attach to draft release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download kazakhmetal-fullhd-video-2026-11-10 --pattern 'kazakhmetal-fullhd.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 7
+          cat parts/kazakhmetal-fullhd.part.??? > KazakhMetal_FullHD_original.mp4
+          echo '02c051b3ebcce1c3c00b15d945ee462cfd3fe23a173142fd206c0bba5613e9f8  KazakhMetal_FullHD_original.mp4' | sha256sum --check
+          gh release upload kazakhmetal-fullhd-video-2026-11-10 KazakhMetal_FullHD_original.mp4
