@@ -1,0 +1,24 @@
+name: Deliver revised KazakhMetal female voice video
+on:
+  push:
+    branches: [kazakhmetal-female-voice-delivery-20261110]
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Assemble verified revised Full HD video
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download kazakhmetal-fullhd-female-2026-11-10 --pattern 'female-fullhd.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 7
+          cat parts/female-fullhd.part.??? > KazakhMetal_FullHD_female.mp4
+          echo '82d9e8717f1fa07f0f5ccf55b7c713d4a49d14c47bb9ae0b620d3432fcdfe203  KazakhMetal_FullHD_female.mp4' | sha256sum --check
+          gh release upload kazakhmetal-fullhd-female-2026-11-10 KazakhMetal_FullHD_female.mp4
