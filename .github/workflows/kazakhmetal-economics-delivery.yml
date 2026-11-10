@@ -1,0 +1,26 @@
+name: Deliver updated KazakhMetal presentation and economics
+on:
+  push:
+    branches: [kazakhmetal-economics-delivery-20261110]
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Reassemble and verify the original deliverables
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download kazakhmetal-maintenance-economics-2026-11-10 --pattern 'delivery.zip.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 9
+          cat parts/delivery.zip.part.??? > delivery.zip
+          echo 'e06637d0c9e41b911bdd83624800124039c86e8628046b3f6715581c8f08f706  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check checksums.sha256
+          gh release upload kazakhmetal-maintenance-economics-2026-11-10 KazakhMetal_FullHD_economics.mp4 KazakhMetal_editable.pdf KazakhMetal_editable.pptx KazakhMetal_calculations.xlsx
