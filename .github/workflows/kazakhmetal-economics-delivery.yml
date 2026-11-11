@@ -1,0 +1,26 @@
+name: Deliver updated KazakhMetal presentation and economics
+on:
+  push:
+    branches: [qazaqmetal-brand-delivery-20261111]
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Reassemble and verify the original deliverables
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qazaqmetal-kasipodagy-2026-11-11 --pattern 'delivery.zip.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 10
+          cat parts/delivery.zip.part.??? > delivery.zip
+          echo '86dcb7faa4d175b4b8f7650681a4bdeb0737c6c687781880a5a0c7c05f2800d9  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check checksums.sha256
+          gh release upload qazaqmetal-kasipodagy-2026-11-11 QazaqMetal_Kasipodagy_FullHD.mp4 KazakhMetal_editable.pdf KazakhMetal_editable.pptx KazakhMetal_calculations.xlsx
