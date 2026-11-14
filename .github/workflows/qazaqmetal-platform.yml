@@ -17,8 +17,10 @@ jobs:
           POSTGRES_USER: qazaqmetal
           POSTGRES_PASSWORD: ci-only-not-for-production
           POSTGRES_DB: qazaqmetal_test
+          PGUSER: qazaqmetal
+          PGDATABASE: qazaqmetal_test
         ports: ['5432:5432']
-        options: --health-cmd='pg_isready -U qazaqmetal -d qazaqmetal_test' --health-interval=5s --health-timeout=5s --health-retries=10
+        options: --health-cmd pg_isready --health-interval=5s --health-timeout=5s --health-retries=10
     env:
       DATABASE_URL: postgresql+psycopg://qazaqmetal:ci-only-not-for-production@127.0.0.1:5432/qazaqmetal_test
       TEST_DATABASE_URL: postgresql+psycopg://qazaqmetal:ci-only-not-for-production@127.0.0.1:5432/qazaqmetal_test

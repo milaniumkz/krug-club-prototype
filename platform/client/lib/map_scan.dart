@@ -42,11 +42,12 @@ class _VenueMapState extends State<VenueMap> {
   Future<void> init() async {
     try {
       final meta = await widget.api.get('/meta');
-      if (mounted)
+      if (mounted) {
         setState(() {
           tiles = s(meta['tiles']);
           attribution = s(meta['attribution']);
         });
+      }
     } catch (_) {}
     await locate();
   }

@@ -5,7 +5,7 @@ COPY server/requirements.lock /app/requirements.lock
 RUN pip install --no-cache-dir -r requirements.lock && useradd -u 10001 -m appuser
 COPY server /app
 COPY web /web
-RUN mkdir -p /data/uploads && chown -R appuser:appuser /data /app
+RUN mkdir -p /data/uploads && chown -R appuser:appuser /data /app && chmod -R a+rX /web
 USER appuser
 ENV WEB_DIR=/web UPLOAD_DIR=/data/uploads
 EXPOSE 8000

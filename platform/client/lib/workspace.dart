@@ -710,11 +710,12 @@ class _LocationPickerState extends State<LocationPicker> {
   void initState() {
     super.initState();
     widget.api.get('/meta').then((m) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           tiles = s(m['tiles']);
           attribution = s(m['attribution']);
         });
+      }
     });
   }
 
