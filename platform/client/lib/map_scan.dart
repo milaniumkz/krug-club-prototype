@@ -49,17 +49,25 @@ class _VenueMapState extends State<VenueMap> {
         });
       }
     } catch (_) {}
+    if (!mounted) {
+      return;
+    }
     await locate();
   }
 
   Future<void> locate() async {
-    if (locating) return;
+    if (!mounted || locating) {
+      return;
+    }
     setState(() => locating = true);
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         throw ApiError(0, 'Включите геолокацию или перемещайте карту вручную');
       }
       var permission = await Geolocator.checkPermission();
+      if (!mounted) {
+        return;
+      }
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
@@ -278,9 +286,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && !busy && !paused) {
-      controller.start();
+      controller.start().catchError((Object _) {});
     } else {
-      controller.stop();
+      controller.stop().catchError((Object _) {});
     }
   }
 
@@ -300,7 +308,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       error = null;
       paused = true;
     });
-    await controller.stop();
+    try {
+      await controller.stop();
+    } catch (_) {}
     if (lastCode != raw) {
       lastCode = raw;
       requestId = const Uuid().v4();
@@ -484,7 +494,15 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
             children: [
               IconButton(
                 tooltip: 'Фонарик',
-                onPressed: controller.toggleTorch,
+                onPressed: () async {
+                  try {
+                    await controller.toggleTorch();
+                  } catch (_) {
+                    if (context.mounted) {
+                      toast(context, 'Фонарик недоступен');
+                    }
+                  }
+                },
                 icon: const Icon(
                   Icons.flashlight_on_outlined,
                   color: Colors.white,
@@ -492,7 +510,15 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
               ),
               IconButton(
                 tooltip: 'Переключить камеру',
-                onPressed: controller.switchCamera,
+                onPressed: () async {
+                  try {
+                    await controller.switchCamera();
+                  } catch (_) {
+                    if (context.mounted) {
+                      toast(context, 'Камера недоступна');
+                    }
+                  }
+                },
                 icon: const Icon(
                   Icons.cameraswitch_outlined,
                   color: Colors.white,
