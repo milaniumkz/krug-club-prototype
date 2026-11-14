@@ -67,7 +67,7 @@ flutter build appbundle --release --dart-define=API_BASE_URL=https://your-domain
 
 1. На сервере Linux установите Docker/Compose, направьте DNS домена на сервер, откройте 80/443.
 2. Подготовьте веб-сборку. Скопируйте `.env.example` в `.env`, укажите домен, почту для TLS и два разных случайных URL-safe пароля `DB_PASSWORD` и `ROOT_DB_PASSWORD`.
-3. Выполните `docker compose up -d --build`. PostgreSQL и API не выставляют порты наружу. API использует отдельную роль БД без SUPERUSER/CREATEDB/CREATEROLE. Caddy выдаёт TLS-сертификат.
+3. После переноса ZIP выполните `chmod 755 deploy/init-db.sh`, затем `docker compose up -d --build`. PostgreSQL и API не выставляют порты наружу. API использует отдельную роль БД без SUPERUSER/CREATEDB/CREATEROLE. Caddy выдаёт TLS-сертификат.
 4. Проверьте `https://DOMAIN/api/health`.
 5. Выполните `docker compose exec api python -m app.cli bootstrap-admin --username YOUR_LOGIN` и введите временный пароль интерактивно.
 6. Войдите через браузер, задайте личный пароль, создайте организации и партнёров, выдайте доступы. Импортируйте работников и передавайте временные пароли индивидуально.

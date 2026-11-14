@@ -826,7 +826,7 @@ class TicketsPage extends StatelessWidget {
                     Text(s(t['subject']), style: titleStyle(21)),
                     Text(s(t['message'])),
                     Text(
-                      'Статус: ${t["status"]}',
+                      'Статус: ${human(t["status"])}',
                       style: const TextStyle(color: muted),
                     ),
                     if (s(t['reply']).isNotEmpty)

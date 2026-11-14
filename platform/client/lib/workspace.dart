@@ -843,7 +843,7 @@ class ModerationPage extends StatelessWidget {
                 children: [
                   Text(s(r['data']['name']), style: titleStyle(25)),
                   Text(
-                    '${r["resource"]["kind"]} · ${r["action"] == "delete" ? "Запрос удаления" : "Изменение / публикация"}',
+                    '${human(r["resource"]["kind"])} · ${r["action"] == "delete" ? "Запрос удаления" : "Изменение / публикация"}',
                     style: const TextStyle(color: purple),
                   ),
                   const SizedBox(height: 16),
@@ -885,7 +885,7 @@ class ModerationPage extends StatelessWidget {
                                             bottom: 5,
                                           ),
                                           child: Text(
-                                            '${e.key}: ${e.value}',
+                                            '${human(e.key)}: ${e.value}',
                                             style: const TextStyle(
                                               fontSize: 12,
                                             ),
@@ -1489,7 +1489,7 @@ class _AccountsPageState extends State<AccountsPage> {
                 children: [
                   Text(s(person['name']), style: titleStyle(22)),
                   Text(
-                    '${person["role"]} · ${person["status"]} · № ${s(person["employee_number"])}',
+                    '${human(person["role"])} · ${human(person["status"])} · № ${s(person["employee_number"])}',
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -1786,7 +1786,7 @@ class AdminTickets extends StatelessWidget {
                   Text(s(t['subject']), style: titleStyle(23)),
                   Text(s(t['message'])),
                   Text(
-                    'Статус: ${t["status"]}',
+                    'Статус: ${human(t["status"])}',
                     style: const TextStyle(color: muted),
                   ),
                   if (s(t['reply']).isNotEmpty) Text('Ответ: ${t["reply"]}'),
@@ -1830,7 +1830,7 @@ class AuditPage extends StatelessWidget {
         ...rows(data).map(
           (a) => ListTile(
             leading: const Icon(Icons.history, color: purple),
-            title: Text(s(a['action'])),
+            title: Text(human(a['action'])),
             subtitle: SelectableText(
               '${a["created_at"]}\nОбъект: ${a["target"]}\n${jsonEncode(a["detail"])}',
               style: const TextStyle(fontSize: 11),
