@@ -460,7 +460,25 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                 textAlign: TextAlign.center,
                               ),
                               TextButton(
-                                onPressed: Geolocator.openAppSettings,
+                                onPressed: () async {
+                                  try {
+                                    final opened =
+                                        await Geolocator.openAppSettings();
+                                    if (!opened && context.mounted) {
+                                      toast(
+                                        context,
+                                        'Разрешите камеру в настройках устройства или сайта',
+                                      );
+                                    }
+                                  } catch (_) {
+                                    if (context.mounted) {
+                                      toast(
+                                        context,
+                                        'В браузере разрешите камеру через значок настроек рядом с адресом сайта',
+                                      );
+                                    }
+                                  }
+                                },
                                 child: const Text('Открыть настройки'),
                               ),
                             ],

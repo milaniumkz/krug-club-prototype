@@ -29,3 +29,7 @@
 Клиент: `flutter pub get --enforce-lockfile && flutter analyze && flutter test`. Native и web команды описаны в README.
 
 Браузер: установите `server/requirements-browser.txt` и Chromium/ffmpeg; заведите отдельную preview-БД и выполните миграции, затем `python server/tests/seed_browser.py /private/qa-credentials.json`. Запустите API и собранный веб-клиент, выполните `python scripts/browser_smoke.py --credentials /private/qa-credentials.json`. Скрипт отказывается использовать идентификаторы не-QA. Не запускать на рабочей базе.
+
+## Файлы поставки
+
+`QazaqMetal_full_project.zip` содержит исходники всех платформ и предварительно собранную веб-версию. `QazaqMetal_Android_debug.apk` предназначен для локального тестирования с API через USB reverse. `QazaqMetal_iOS_unsigned_validation.zip` — техническое подтверждение компиляции, не подписанный установочный IPA. В архивы не входят `.env`, рабочие базы, файлы работников, приватные ключи или тестовые пароли QA.
