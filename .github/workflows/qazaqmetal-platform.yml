@@ -56,10 +56,3 @@ jobs:
         with:
           name: iOS-unsigned-build
           path: platform/client/build/ios/iphoneos/Runner.app
-      - name: Deliver unsigned iOS validation build
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: milaniumkz/krug-club-prototype
-        run: |
-          ditto -c -k --sequesterRsrc --keepParent platform/client/build/ios/iphoneos/Runner.app iOS-unsigned.zip
-          gh release upload qazaqmetal-platform-2026-11-14 iOS-unsigned.zip --clobber

@@ -187,3 +187,67 @@ def test_ticket_reply_persists(world):
     assert c.post('/api/admin/tickets/'+tid, headers=a,
                   json={'status': 'closed', 'reply': 'Откройте QR в нижнем меню'}).status_code == 200
     assert c.get('/api/tickets', headers=m).json()[0]['reply'] == 'Откройте QR в нижнем меню'
+
+
+def test_pending_content_cannot_bypass_ownership_or_validation(world):
+    c, _, ids = world
+    p = login(c, 'owner')
+    venue = submit(c, p, partner_id=ids['other_partner'])
+    assert venue['partner_id'] == ids['partner']
+    assert c.post('/api/workspace/resources', headers=p, json={
+        'kind': 'offer', 'venue_id': venue['id'],
+        'data': {'name': 'Invalid', 'percent': 101, 'terms': 'Terms'}}).status_code == 422
+    assert c.post('/api/workspace/resources', headers=p, json={
+        'kind': 'venue', 'data': {'name': 'Invalid', 'category': 'Shop', 'address': 'Street',
+                                 'latitude': 120, 'longitude': 50}}).status_code == 422
+
+
+def test_expired_offer_and_org_restriction_do_not_apply(world):
+    c, _, _, m, venue, offer, qr = setup_catalog(world)
+    with world[1]() as db:
+        resource = db.get(Resource, offer['id'])
+        resource.published = {**resource.published, 'ends_on': '2000-01-01'}
+        db.commit()
+    assert c.post('/api/scan', headers=m, json={'code': qr, 'request_id': str(uuid.uuid4())}).status_code == 409
+    with world[1]() as db:
+        resource = db.get(Resource, offer['id'])
+        resource.published = {**resource.published, 'ends_on': None, 'organization_ids': ['other-organization']}
+        db.commit()
+    assert c.post('/api/scan', headers=m, json={'code': qr, 'request_id': str(uuid.uuid4())}).status_code == 409
+
+
+def test_validation_never_echoes_password(world):
+    c, _, _ = world
+    h = login(c, '1001', change=False)
+    secret = 'do-not-echo-this'
+    r = c.post('/api/auth/password', headers=h, json={'old_password': secret, 'new_password': 'x7Q'})
+    assert r.status_code == 422
+    assert secret not in r.text and 'x7Q' not in r.text
+
+
+def test_session_expiration(world):
+    from app.db import Session
+    c, factory, _ = world
+    h = login(c, '1001')
+    with factory() as db:
+        for session in db.scalars(select(Session)).all():
+            session.expires_at = now() - timedelta(seconds=1)
+        db.commit()
+    assert c.get('/api/auth/me', headers=h).status_code == 401
+
+
+def test_concurrent_qr_only_one_visit_on_postgres(world):
+    import pytest
+    from concurrent.futures import ThreadPoolExecutor
+    c, factory, _ = world
+    with factory() as db:
+        if db.bind.dialect.name != 'postgresql':
+            pytest.skip('PostgreSQL row-lock integration test')
+    c, _, _, m, _, _, qr = setup_catalog(world)
+    def use(_):
+        return c.post('/api/scan', headers=m, json={'code': qr, 'request_id': str(uuid.uuid4())})
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        responses = list(pool.map(use, range(4)))
+    assert all(r.status_code == 200 for r in responses)
+    assert len({r.json()['id'] for r in responses}) == 1
+    assert len(c.get('/api/me/history', headers=m).json()) == 1
