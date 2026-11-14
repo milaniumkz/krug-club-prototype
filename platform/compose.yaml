@@ -16,6 +16,10 @@ services:
       timeout: 3s
       retries: 20
   api:
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
     build:
       context: .
       dockerfile: server/Dockerfile
@@ -37,18 +41,27 @@ services:
       timeout: 5s
       retries: 10
   edge:
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
     image: caddy:2.10-alpine
     restart: unless-stopped
     ports: ['80:80', '443:443', '443:443/udp']
     environment:
       DOMAIN: ${DOMAIN:?}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+      NO_PROXY: api,db,localhost,127.0.0.1,::1
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
       api:
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
         condition: service_healthy
 volumes:
   postgres:

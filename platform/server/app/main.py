@@ -1,3 +1,5 @@
+import asyncio
+import weakref
 import csv
 import io
 import math
@@ -15,7 +17,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy import delete, func, or_, select, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, TimeoutError as PoolTimeout
 
 from . import schemas as S
 from .db import (Audit, Favorite, LoginAttempt, Organization, Partner, Resource,
@@ -38,6 +40,10 @@ TILE_ORIGIN = urlsplit(TILE_URL).scheme + '://' + urlsplit(TILE_URL).netloc.repl
 if PRODUCTION and not TILE_URL.startswith('https://'):
     raise RuntimeError('Production map tiles must use HTTPS')
 Image.MAX_IMAGE_PIXELS = 20_000_000
+# Bound synchronous database work before it occupies AnyIO worker threads.
+# Otherwise thousands of waiting dependencies can starve request cleanup.
+_admission = weakref.WeakKeyDictionary()
+
 
 
 @app.middleware('http')
@@ -51,7 +57,22 @@ async def protection(request, call_next):
         length = request.headers.get('content-length')
         if length and (not length.isdigit() or int(length) > 9 * 1024 * 1024):
             return JSONResponse({'detail': 'Файл слишком большой'}, status_code=413)
-    response = await call_next(request)
+    if request.url.path.startswith('/api/') and request.url.path not in ('/api/meta', '/api/health'):
+        loop = asyncio.get_running_loop()
+        gate = _admission.setdefault(loop, asyncio.Semaphore(10))
+        try:
+            # Only admission is timed: never cancel a running write halfway through.
+            await asyncio.wait_for(gate.acquire(), timeout=30)
+        except TimeoutError:
+            response = JSONResponse({'detail': 'Сервер занят. Повторите запрос'},
+                                    status_code=503, headers={'Retry-After': '2'})
+        else:
+            try:
+                response = await call_next(request)
+            finally:
+                gate.release()
+    else:
+        response = await call_next(request)
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'same-origin'
     response.headers['X-Frame-Options'] = 'DENY'
@@ -75,6 +96,12 @@ async def validation_error(_request, exc):
     # Never echo passwords, tokens or the submitted CSV/JSON back in error payloads.
     return JSONResponse(status_code=422, content={'detail': 'Проверьте заполнение полей',
         'fields': [{'field': '.'.join(map(str, e['loc'])), 'type': e['type']} for e in exc.errors()]})
+
+
+@app.exception_handler(PoolTimeout)
+async def pool_busy(request, exc):
+    return JSONResponse({'detail': 'Сервер занят. Повторите запрос'},
+                        status_code=503, headers={'Retry-After': '2'})
 
 
 @app.exception_handler(IntegrityError)
@@ -132,11 +159,12 @@ def visit_json(v, private=False):
     return data
 
 
-def public_venues(db, user):
+def public_venues(db, user, venue_id=None):
     rows = db.scalars(select(Resource).join(Partner, Partner.id == Resource.partner_id)
                       .where(Resource.kind == 'venue', Resource.published.is_not(None),
                              Resource.enabled.is_(True), Resource.deleted.is_(False),
-                             Partner.active.is_(True))).all()
+                             Partner.active.is_(True),
+                             *([Resource.id == venue_id] if venue_id else []))).all()
     return [r for r in rows if active_data(r.published, user.organization_id)]
 
 
@@ -261,7 +289,7 @@ def catalog(q: str = '', category: str = '', latitude: float | None = Query(None
             if r.latitude is None or not (south <= r.latitude <= north and west <= r.longitude <= east):
                 continue
         result = resource_json(r)
-        result['offers'] = [resource_json(o) for o in offers_for(db, user, r.id)]
+        result['offers'] = []
         result['distance_km'] = None
         if latitude is not None and longitude is not None and r.latitude is not None:
             lat1, lat2 = math.radians(latitude), math.radians(r.latitude)
@@ -269,12 +297,23 @@ def catalog(q: str = '', category: str = '', latitude: float | None = Query(None
             result['distance_km'] = round(6371 * 2 * math.asin(min(1, math.sqrt(a))), 2)
         results.append(result)
     results.sort(key=lambda r: (r['distance_km'] if r['distance_km'] is not None else float('inf'), r['data']['name']))
-    return {'items': results[offset:offset+limit], 'total': len(results)}
+    page = results[offset:offset+limit]
+    by_id = {item['id']: item for item in page}
+    if by_id:
+        # One offer query per page, rather than one per venue.
+        offers = db.scalars(select(Resource).where(
+            Resource.kind == 'offer', Resource.venue_id.in_(by_id),
+            Resource.enabled.is_(True), Resource.deleted.is_(False),
+            Resource.published.is_not(None))).all()
+        for offer in offers:
+            if active_data(offer.published, user.organization_id):
+                by_id[offer.venue_id]['offers'].append(resource_json(offer))
+    return JSONResponse({'items': page, 'total': len(results)})
 
 
 @app.get('/api/catalog/{resource_id}')
 def catalog_detail(resource_id: str, user=Depends(member), db=Depends(get_db)):
-    r = next((r for r in public_venues(db, user) if r.id == resource_id), None)
+    r = next(iter(public_venues(db, user, resource_id)), None)
     require(r)
     return dict(**resource_json(r), offers=[resource_json(o) for o in offers_for(db, user, r.id)])
 
@@ -329,10 +368,10 @@ def scan(body: S.ScanIn, user=Depends(member), db=Depends(get_db)):
     match = re.fullmatch(r'QAZAQMETAL:1:([a-f0-9-]{36}):([A-Za-z0-9_-]{32,64})', body.code)
     if not match:
         raise HTTPException(400, 'Это не QR-код заведения QAZAQMETAL. Ссылки не открываются')
-    venue = db.scalar(select(Resource).where(Resource.id == match[1]).with_for_update())
+    venue = db.scalar(select(Resource).where(Resource.id == match[1]).with_for_update(read=True))
     if not venue or venue.kind != 'venue' or not venue.qr_hash or not secrets.compare_digest(venue.qr_hash, digest(match[2])):
         raise HTTPException(404, 'QR-код неизвестен или заменён. Попросите актуальный код')
-    if venue.id not in {v.id for v in public_venues(db, user)}:
+    if venue.id not in {v.id for v in public_venues(db, user, venue.id)}:
         raise HTTPException(409, 'Заведение временно недоступно')
     offers = offers_for(db, user, venue.id)
     if not offers:
@@ -535,15 +574,20 @@ def stats(start: date | None = None, end: date | None = None, venue_id: str = ''
         query = query.where(Visit.created_at >= datetime.combine(start, time.min))
     if end:
         query = query.where(Visit.created_at < datetime.combine(end + timedelta(days=1), time.min))
-    visits = db.scalars(query.order_by(Visit.created_at.desc())).all()
-    venues, days = {}, {}
-    for v in visits:
-        venues.setdefault(v.venue_id, {'venue_id': v.venue_id, 'name': v.venue_name, 'uses': 0})['uses'] += 1
-        day = v.created_at.date().isoformat()
-        days[day] = days.get(day, 0) + 1
-    return {'total_uses': len(visits), 'unique_members': len({v.user_id for v in visits}),
-            'venues': list(venues.values()), 'days': days,
-            'operations': [visit_json(v, private=user.role == 'admin') for v in visits[:500]]}
+    total, unique = db.execute(query.with_only_columns(
+        func.count(Visit.id), func.count(func.distinct(Visit.user_id)))).one()
+    venues = [dict(venue_id=venue_id, name=name, uses=uses)
+              for venue_id, name, uses in db.execute(query.with_only_columns(
+                  Visit.venue_id, func.max(Visit.venue_name), func.count(Visit.id))
+                  .group_by(Visit.venue_id)).all()]
+    days = {str(day): count for day, count in db.execute(query.with_only_columns(
+        func.date(Visit.created_at), func.count(Visit.id))
+        .group_by(func.date(Visit.created_at))).all()}
+    visits = db.scalars(query.order_by(Visit.created_at.desc()).limit(500)).all()
+    return {'total_uses': total, 'unique_members': unique,
+            'venues': venues, 'days': days,
+            'operations': [visit_json(v, private=user.role == 'admin') for v in visits]}
+
 
 
 @app.get('/api/admin/organizations')

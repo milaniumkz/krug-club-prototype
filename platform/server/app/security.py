@@ -62,20 +62,20 @@ def issue_session(db, user, response):
 def current_user(request: Request, db=Depends(get_db)):
     auth = request.headers.get('authorization', '')
     token = auth[7:] if auth.startswith('Bearer ') else request.cookies.get(COOKIE, '')
-    session = db.get(Session, digest(token)) if token else None
-    if not session or session.expires_at <= now():
+    row = db.execute(select(Session, User, Organization.active, Partner.active)
+        .join(User, Session.user_id == User.id)
+        .outerjoin(Organization, User.organization_id == Organization.id)
+        .outerjoin(Partner, User.partner_id == Partner.id)
+        .where(Session.id == digest(token))).first() if token else None
+    if not row or row[0].expires_at <= now():
         raise HTTPException(401, 'Войдите в систему')
-    user = db.get(User, session.user_id)
-    if not user or user.status != 'active':
+    _, user, organization_active, partner_active = row
+    if user.status != 'active':
         raise HTTPException(403, 'Доступ приостановлен. Обратитесь в профсоюз')
-    if user.organization_id:
-        organization = db.get(Organization, user.organization_id)
-        if not organization or not organization.active:
-            raise HTTPException(403, 'Организация отключена')
-    if user.partner_id:
-        partner = db.get(Partner, user.partner_id)
-        if not partner or not partner.active:
-            raise HTTPException(403, 'Доступ партнёра приостановлен')
+    if user.organization_id and not organization_active:
+        raise HTTPException(403, 'Организация отключена')
+    if user.partner_id and not partner_active:
+        raise HTTPException(403, 'Доступ партнёра приостановлен')
     request.state.user_id = user.id
     return user
 

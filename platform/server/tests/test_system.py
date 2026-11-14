@@ -251,3 +251,93 @@ def test_concurrent_qr_only_one_visit_on_postgres(world):
     assert all(r.status_code == 200 for r in responses)
     assert len({r.json()['id'] for r in responses}) == 1
     assert len(c.get('/api/me/history', headers=m).json()) == 1
+
+
+def test_catalog_query_budget_pagination_and_immediate_partner_disable(world):
+    """Adding venues must not add one SQL query per venue or bypass fresh access rules."""
+    from sqlalchemy import event
+    from app.db import Partner
+    c, a, p, m, venue, offer, _ = setup_catalog(world)
+    _, factory, ids = world
+    with factory() as db:
+        for i in range(35):
+            r = Resource(kind='venue', partner_id=ids['partner'], version=1,
+                         published={**venue['revision']['data'], 'name': f'QA {i:03}'},
+                         latitude=52.28, longitude=76.96)
+            db.add(r); db.flush()
+            db.add(Resource(kind='offer', partner_id=ids['partner'], venue_id=r.id,
+                            version=1, published=offer['revision']['data']))
+        db.commit()
+    queries=[]
+    engine=factory.kw['bind']
+    def record(conn, cursor, statement, parameters, context, many):
+        queries.append(statement)
+    event.listen(engine, 'before_cursor_execute', record)
+    try:
+        result=c.get('/api/catalog?limit=10&offset=10', headers=m)
+        assert result.status_code == 200
+        body=result.json()
+        assert body['total']==36 and len(body['items'])==10
+        assert all(len(item['offers'])==1 for item in body['items'])
+        assert len(queries)<=3, f'Catalog performed {len(queries)} SQL statements'
+    finally:
+        event.remove(engine, 'before_cursor_execute', record)
+    with factory() as db:
+        db.get(Partner, ids['partner']).active=False
+        db.commit()
+    assert c.get('/api/catalog', headers=m).json()['total']==0
+    assert c.get('/api/catalog/'+venue['id'], headers=m).status_code==404
+    assert c.get('/api/workspace/resources', headers=p).status_code==403
+
+
+def test_administration_accounts_reset_sessions_options_and_audit(world):
+    c, _, _=world
+    a=login(c,'admin')
+    org=c.post('/api/admin/organizations',headers=a,json={'code':'QA2','name':'Вторая организация'}).json()
+    assert any(o['id']==org['id'] for o in c.get('/api/admin/organizations',headers=a).json())
+    assert c.put('/api/admin/organizations/'+org['id'],headers=a,json={'code':'QA2','name':'Новое название','active':True}).status_code==200
+    partner=c.post('/api/admin/partners',headers=a,json={'name':'Новый партнёр'}).json()
+    assert any(p['id']==partner['id'] for p in c.get('/api/admin/partners',headers=a).json())
+    assert c.put('/api/admin/partners/'+partner['id'],headers=a,json={'name':'Партнёр 2','active':False}).status_code==200
+    r=c.post('/api/admin/accounts',headers=a,json={'name':'Работник QA','organization_id':org['id'],'employee_number':'QA-999','phone':'+77000000000'})
+    assert r.status_code==201
+    data=r.json();uid=data['user']['id'];temporary=data['temporary_password']
+    r=c.post('/api/auth/login',json={'identifier':'QA-999','password':temporary})
+    assert r.status_code==200
+    h={'Authorization':'Bearer '+r.json()['token']};c.cookies.clear()
+    assert c.get('/api/catalog',headers=h).status_code==428
+    assert c.post('/api/auth/password',headers=h,json={'old_password':temporary,'new_password':PERSONAL}).status_code==200
+    c.cookies.clear()
+    r=c.post('/api/auth/login',json={'identifier':'+77000000000','password':PERSONAL})
+    assert r.status_code==200
+    h={'Authorization':'Bearer '+r.json()['token']};c.cookies.clear()
+    sessions=c.get('/api/auth/sessions',headers=h).json()
+    assert len(sessions)>=1
+    assert c.delete('/api/auth/sessions/'+sessions[-1]['id'],headers=h).status_code==200
+    reset=c.post('/api/admin/accounts/'+uid+'/reset-password',headers=a)
+    assert reset.status_code==200
+    assert c.get('/api/auth/me',headers=h).status_code==401
+    assert c.post('/api/auth/login',json={'identifier':'QA-999','password':PERSONAL}).status_code==401
+    c.cookies.clear()
+    assert c.get('/api/admin/accounts?q=QA-999&organization_id='+org['id'],headers=a).json()['total']==1
+    assert c.get('/api/workspace/options',headers=a).status_code==200
+    assert c.get('/api/admin/audit',headers=a).status_code==200
+    assert c.post('/api/admin/accounts/'+uid+'/status',headers=a,json={'status':'dismissed','reason':'Уволен из организации'}).status_code==200
+    assert c.post('/api/auth/login',json={'identifier':'QA-999','password':reset.json()['temporary_password']}).status_code==401
+
+
+def test_all_protected_routes_reject_anonymous_access(world):
+    from app.main import app
+    from fastapi.routing import APIRoute
+    c,_,_=world
+    for route in app.routes:
+        if not isinstance(route,APIRoute) or not route.path.startswith('/api/'):
+            continue
+        if route.path in ('/api/auth/login','/api/health','/api/meta'):
+            continue
+        path=route.path
+        for parameter in route.param_convertors:
+            path=path.replace('{'+parameter+'}','00000000-0000-0000-0000-000000000000')
+        for method in route.methods:
+            response=c.request(method,path,json={})
+            assert response.status_code==401,(method,path,response.status_code)
