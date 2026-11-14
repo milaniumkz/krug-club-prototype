@@ -1,0 +1,39 @@
+name: qazaqmetal
+description: QAZAQMETAL KÁSIPODAǴY member and partner platform
+publish_to: none
+version: 2.0.0+10
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  http: ^1.5.0
+  flutter_secure_storage: ^9.2.4
+  mobile_scanner: ^7.0.1
+  qr_flutter: ^4.1.0
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  geolocator: ^14.0.2
+  uuid: ^4.5.1
+  image_picker: ^1.2.0
+  file_selector: ^1.0.4
+  url_launcher: ^6.3.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/Manrope.ttf
+    - family: PTSerif
+      fonts:
+        - asset: assets/PTSerif-Regular.ttf
+        - asset: assets/PTSerif-Bold.ttf
+          weight: 700

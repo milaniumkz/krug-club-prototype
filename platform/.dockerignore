@@ -1,0 +1,13 @@
+.git
+**/.dart_tool
+**/build
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/*.db*
+**/uploads
+**/.env*
+artifacts
+client
+*.log
+server/tests
