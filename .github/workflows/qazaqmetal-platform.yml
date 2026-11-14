@@ -2,7 +2,7 @@
 name: QazaqMetal quality
 on:
   push:
-    paths: ['platform/**', '.github/workflows/qazaqmetal-platform.yml']
+    paths: ['platform/server/**', 'platform/client/**', 'platform/deploy/**', 'platform/scripts/**', 'platform/compose.yaml', '.github/workflows/qazaqmetal-platform.yml']
   pull_request:
     paths: ['platform/**']
 permissions:
@@ -41,8 +41,6 @@ jobs:
           flutter-version: '3.47.9'
       - run: cd platform/client && flutter pub get --enforce-lockfile && flutter analyze && flutter test && flutter build web --release --no-web-resources-cdn --no-wasm-dry-run
   ios:
-    permissions:
-      contents: write
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4

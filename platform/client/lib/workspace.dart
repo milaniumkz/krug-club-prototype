@@ -539,14 +539,23 @@ class _ResourceEditorState extends State<ResourceEditor> {
                       )
                       .toList(),
                   onChanged: widget.row == null
-                      ? (v) => setState(() => partner = v ?? '')
+                      ? (v) => setState(() {
+                          partner = v ?? '';
+                          venue = '';
+                        })
                       : null,
                 ),
               if (widget.kind != 'venue')
                 Padding(
                   padding: const EdgeInsets.only(top: 14),
                   child: DropdownButtonFormField<String>(
-                    initialValue: venues.any((v) => v['id'] == venue)
+                    key: ValueKey(partner),
+                    initialValue:
+                        venues.any(
+                          (v) =>
+                              v['id'] == venue &&
+                              (partner.isEmpty || v['partner_id'] == partner),
+                        )
                         ? venue
                         : null,
                     isExpanded: true,
@@ -995,7 +1004,12 @@ class _StatsPageState extends State<StatsPage> {
       return ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('Результаты клуба', style: titleStyle(30)),
+          Text(
+            widget.api.user!['role'] == 'partner'
+                ? 'Результаты заведений'
+                : 'Результаты клуба',
+            style: titleStyle(30),
+          ),
           const SizedBox(height: 20),
           Wrap(
             spacing: 12,

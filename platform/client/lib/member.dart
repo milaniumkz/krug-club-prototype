@@ -688,9 +688,14 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(s(api.user!['name']), style: titleStyle(27)),
-            Text('Табельный номер: ${s(api.user!["employee_number"])}'),
+            if (api.user!['role'] == 'member')
+              Text('Табельный номер: ${s(api.user!["employee_number"])}')
+            else
+              Text(
+                api.user!['role'] == 'partner' ? 'Партнёр' : 'Администратор',
+              ),
             Text(
-              s(api.user!['organization_name']),
+              s(api.user!['organization_name'] ?? api.user!['partner_name']),
               style: const TextStyle(color: muted),
             ),
           ],

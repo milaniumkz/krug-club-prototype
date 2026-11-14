@@ -134,7 +134,12 @@ class _LoadViewState extends State<LoadView> {
     future = widget.load();
   }
 
-  void refresh() => setState(() => future = widget.load());
+  void refresh() {
+    if (mounted) {
+      setState(() => future = widget.load());
+    }
+  }
+
   @override
   Widget build(BuildContext context) => FutureBuilder<dynamic>(
     future: future,

@@ -2,7 +2,7 @@
 name: QazaqMetal quality
 on:
   push:
-    paths: ['platform/**', '.github/workflows/qazaqmetal-platform.yml']
+    paths: ['platform/server/**', 'platform/client/**', 'platform/deploy/**', 'platform/scripts/**', 'platform/compose.yaml', '.github/workflows/qazaqmetal-platform.yml']
   pull_request:
     paths: ['platform/**']
 permissions:
