@@ -1,0 +1,33 @@
+name: Authorized QazaqMetal read-only connectivity check
+on:
+  push:
+    branches: [qazaqmetal-network-check-20261118]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Inspect DNS and SSH reachability without credentials
+        shell: bash
+        run: |
+          python3 - <<'PYCODE'
+          import socket,subprocess,base64,hashlib
+          host='qazaqmetal.109.235.119.144.sslip.io'
+          try: print('DNS:',host,sorted({r[4][0] for r in socket.getaddrinfo(host,443,type=socket.SOCK_STREAM)}))
+          except Exception as e: print('DNS:',type(e).__name__)
+          for port in (22,80,443):
+              try:
+                  with socket.create_connection(('109.235.119.144',port),timeout=8) as s:
+                      print('TCP',port,'OPEN')
+                      if port==22:
+                          s.settimeout(5);print('SSH banner:',s.recv(160).decode(errors='replace').strip())
+              except Exception as e:print('TCP',port,type(e).__name__,getattr(e,'errno',None))
+          result=subprocess.run(['ssh-keyscan','-T','8','-t','ed25519','109.235.119.144'],capture_output=True,text=True,timeout=12)
+          for line in result.stdout.splitlines():
+              if not line or line.startswith('#'): continue
+              row=line.split();digest=hashlib.sha256(base64.b64decode(row[2])).digest()
+              print('Observed, not yet trusted SSH host key:',row[1],'SHA256:'+base64.b64encode(digest).decode().rstrip('='))
+          print('SSH scan diagnostics:',result.stderr.strip() or 'no SSH key/banner received')
+          PYCODE
