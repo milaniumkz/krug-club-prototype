@@ -42,3 +42,6 @@ flutter:
         - asset: assets/PTSerif-Regular.ttf
         - asset: assets/PTSerif-Bold.ttf
           weight: 700
+    - family: Roboto
+      fonts:
+        - asset: assets/Roboto.ttf

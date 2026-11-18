@@ -29,7 +29,7 @@ cd platform/client
 flutter pub get --enforce-lockfile
 flutter analyze
 flutter test
-flutter build web --release --no-tree-shake-icons --output=../web
+flutter build web --release --no-web-resources-cdn --no-tree-shake-icons --output=../web
 flutter build apk --debug --dart-define=API_BASE_URL=https://qazaqmetal.109.235.119.144.sslip.io
 # На macOS с Xcode:
 flutter build ios --release --no-codesign --dart-define=API_BASE_URL=https://qazaqmetal.109.235.119.144.sslip.io
