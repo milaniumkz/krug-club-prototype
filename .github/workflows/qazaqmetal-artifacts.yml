@@ -1,0 +1,24 @@
+name: Deliver QazaqMetal application artifacts
+on:
+  push:
+    branches: [qazaqmetal-artifacts-20261118]
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Verify and publish application files
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qazaqmetal-purple-platform-2026-11-18 --pattern 'delivery.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 17
+          cat parts/delivery.part.??? > delivery.zip
+          echo '737ad2e80fcaf6fd08c3138643b4caf78411d2036e956ec7e0f8dbe75170dde8  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check checksums.sha256
+          gh release upload qazaqmetal-purple-platform-2026-11-18 QazaqMetal_full_project.zip QazaqMetal_Android_debug.apk QazaqMetal_iOS_unsigned_validation.zip TEST_REPORT.md Screenshots_QA.zip QA_protocols.zip checksums.sha256 --clobber
