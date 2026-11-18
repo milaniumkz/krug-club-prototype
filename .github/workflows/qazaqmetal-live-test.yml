@@ -1,0 +1,24 @@
+name: Verify deployed QazaqMetal for testing
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install paramiko==4.0.0 httpx==0.28.1 playwright==1.56.0
+      - name: Verify public API and browser flows with temporary QA identities
+        env:
+          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+        run: python .github/scripts/verify_live.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qazaqmetal-live-verification
+          path: live-verification/
