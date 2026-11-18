@@ -1,0 +1,23 @@
+name: Deliver QazaqMetal 2.2.1 testing files
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Verify and publish complete testing files
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qazaqmetal-server-perf-2026-11-18 --pattern 'perf.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 3
+          cat parts/perf.part.??? > delivery.zip
+          echo 'a527b127ee3f697efe0bf4bcc643d730d6f28f5da06699eaa9c04ffb9a2aea41  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check checksums.sha256
+          gh release upload qazaqmetal-server-perf-2026-11-18 QazaqMetal_full_project.zip checksums.sha256 --clobber
