@@ -34,10 +34,14 @@ if not config.exists():
 # ACME contact email is optional; omit it until supplied, use normal public TLS validation.
 (shared/'Caddyfile').write_text('''{$DOMAIN} {
  encode zstd gzip
- request_body { max_size 9MB }
+ request_body {
+  max_size 9MB
+ }
  reverse_proxy api:8000 {
   header_up X-Forwarded-For {remote_host}
-  transport http { response_header_timeout 120s }
+  transport http {
+   response_header_timeout 120s
+  }
  }
 }
 ''')
