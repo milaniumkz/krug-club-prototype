@@ -1,7 +1,7 @@
 """Run on the authorized host. Passwords generated here never enter repository/logs."""
 import json,os,secrets,subprocess,sys,time,zipfile
 from pathlib import Path
-ROOT=Path('/opt/qazaqmetal'); shared=ROOT/'shared'; release=ROOT/'releases'/'catalog-perf-290121f2ffdd'
+ROOT=Path('/opt/qazaqmetal'); shared=ROOT/'shared'; release=ROOT/'releases'/'async-catalog-bca1f706a4b4'
 def run(args,**kwargs):
     return subprocess.run(args,check=True,**kwargs)
 # Inspect before changing the host. Preserve existing services and app data.
