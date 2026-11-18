@@ -34,7 +34,7 @@ root=Path('/sys/fs/cgroup')
 def read(name):
  try:return (root/name).read_text().strip()
  except OSError:return None
-print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'memory_current_bytes':read('memory.current'),'memory_limit_bytes':read('memory.max'),'load_average':os.getloadavg()}))
+print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'cpu_quota':read('cpu.max'),'host_cpu_stat':Path('/proc/stat').read_text().splitlines()[0],'memory_current_bytes':read('memory.current'),'memory_limit_bytes':read('memory.max'),'load_average':os.getloadavg()}))
 """
   async def stats():return await asyncio.to_thread(remote,stats_code,{})
   async def trial(label,rate,duration,concurrency,closed=False):
@@ -90,6 +90,7 @@ print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'memory
    result={'label':label,'model':'closed-loop' if closed else 'open-loop with explicit in-flight cap and recorded drops','offered_rps':rate if not closed else None,'planned_duration_seconds':duration,'duration_including_drain_seconds':round(elapsed,3),'concurrency_limit':concurrency,'peak_client_inflight':peak,'scheduled':scheduled,'client_dropped':dropped,'unoffered_due_to_abort':0 if closed else max(0,round(rate*duration)-scheduled),'requests_completed':n,'statuses':dict(collections.Counter(statuses)),'successful_rps_including_drain':round(statuses.count('200')/elapsed,2),'successful_rps_within_planned_window':round(sum(status=='200' and end<=duration for status,end in zip(statuses,ends))/duration,2),'error_percent':round(100*errors/max(n,1),3),'p50_ms':round(ordered[n//2]*1000,2) if n else None,'p95_ms':round(ordered[max(0,int(n*.95)-1)]*1000,2) if n else None,'max_ms':round(max(ordered)*1000,2) if n else None,'scheduler_max_lag_ms':round(scheduler_lag*1000,2),'safety_stop':abort.is_set(),'health_checks':health_checks,'api_container_before':before,'api_container_after':await stats()}
    print(json.dumps(result),flush=True);return result
   async def native_trial(concurrency,duration=20):
+   before=await stats()
    lua='wrk.headers["Authorization"] = "Bearer " .. os.getenv("QM_LOAD_TOKEN")\nlocal threads = {}\nstatuses = {}\nfunction setup(thread) table.insert(threads,thread) end\nfunction response(status, headers, body)\n local k=tostring(status);statuses[k]=(statuses[k] or 0)+1\nend\nfunction done(summary,latency,requests)\n local total={}\n for _,thread in ipairs(threads) do\n  local counts=thread:get("statuses")\n  for k,v in pairs(counts) do total[k]=(total[k] or 0)+v end\n end\n for k,v in pairs(total) do print("QM_STATUS "..k.." "..v) end\n print("QM_SUMMARY "..summary.requests.." "..summary.duration)\n print("QM_P95_US "..latency:percentile(95))\nend\n'
    env=dict(os.environ);env['QM_LOAD_TOKEN']=token
    async def host_stats():
@@ -115,7 +116,7 @@ print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'memory
     errors=sum(map(int,socket_errors.groups())) if socket_errors else 0
     assert process.returncode==0 and summary and p95,'Native generator failed; no capacity claim'
     count=int(summary[1]);elapsed=int(summary[2])/1e6
-    result={'label':'native-wrk-'+str(concurrency),'model':'native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee','concurrency_limit':concurrency,'duration_seconds':round(elapsed,3),'requests_completed':count,'statuses':counts,'socket_errors':errors,'successful_rps':round(counts.get('200',0)/elapsed,2),'p95_ms':round(float(p95[1])/1000,2),'generator_threads':2,'container_samples':samples,'raw_generator_output':output}
+    result={'label':'native-wrk-'+str(concurrency),'model':'native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee','concurrency_limit':concurrency,'duration_seconds':round(elapsed,3),'requests_completed':count,'statuses':counts,'socket_errors':errors,'successful_rps':round(counts.get('200',0)/elapsed,2),'p95_ms':round(float(p95[1])/1000,2),'generator_threads':2,'api_container_before':before,'api_container_after':await stats(),'container_samples':samples,'raw_generator_output':output}
     print(json.dumps(result),flush=True);return result
    finally:
     done=True;sampling.cancel()
