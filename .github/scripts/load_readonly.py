@@ -1,5 +1,6 @@
 """Owner-authorized bounded staged read-only capacity test. Does not create discount visits or touch real members."""
 import asyncio,base64,collections,hashlib,json,os,secrets,shlex,socket,time,uuid
+import subprocess,tempfile,re
 from pathlib import Path
 import aiohttp,httpx,paramiko
 BASE='https://qazaqmetal.109.235.119.144.sslip.io';COUNT=5000
@@ -88,6 +89,45 @@ print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'memory
    ordered=sorted(latencies);n=len(statuses);errors=sum(v!='200' for v in statuses)
    result={'label':label,'model':'closed-loop' if closed else 'open-loop with explicit in-flight cap and recorded drops','offered_rps':rate if not closed else None,'planned_duration_seconds':duration,'duration_including_drain_seconds':round(elapsed,3),'concurrency_limit':concurrency,'peak_client_inflight':peak,'scheduled':scheduled,'client_dropped':dropped,'unoffered_due_to_abort':0 if closed else max(0,round(rate*duration)-scheduled),'requests_completed':n,'statuses':dict(collections.Counter(statuses)),'successful_rps_including_drain':round(statuses.count('200')/elapsed,2),'successful_rps_within_planned_window':round(sum(status=='200' and end<=duration for status,end in zip(statuses,ends))/duration,2),'error_percent':round(100*errors/max(n,1),3),'p50_ms':round(ordered[n//2]*1000,2) if n else None,'p95_ms':round(ordered[max(0,int(n*.95)-1)]*1000,2) if n else None,'max_ms':round(max(ordered)*1000,2) if n else None,'scheduler_max_lag_ms':round(scheduler_lag*1000,2),'safety_stop':abort.is_set(),'health_checks':health_checks,'api_container_before':before,'api_container_after':await stats()}
    print(json.dumps(result),flush=True);return result
+  async def native_trial(concurrency,duration=20):
+   lua='wrk.headers["Authorization"] = "Bearer " .. os.getenv("QM_LOAD_TOKEN")\nlocal threads = {}\nstatuses = {}\nfunction setup(thread) table.insert(threads,thread) end\nfunction response(status, headers, body)\n local k=tostring(status);statuses[k]=(statuses[k] or 0)+1\nend\nfunction done(summary,latency,requests)\n local total={}\n for _,thread in ipairs(threads) do\n  local counts=thread:get("statuses")\n  for k,v in pairs(counts) do total[k]=(total[k] or 0)+v end\n end\n for k,v in pairs(total) do print("QM_STATUS "..k.." "..v) end\n print("QM_SUMMARY "..summary.requests.." "..summary.duration)\n print("QM_P95_US "..latency:percentile(95))\nend\n'
+   env=dict(os.environ);env['QM_LOAD_TOKEN']=token
+   async def host_stats():
+    def collect():
+     channel=ssh.open_session();channel.exec_command("docker stats --no-stream --format '{{json .}}'");channel.shutdown_write()
+     data=channel.makefile('r').read();channel.makefile_stderr('r').read()
+     if channel.recv_exit_status():return []
+     return [{k:row.get(k) for k in ['Name','CPUPerc','MemUsage','MemPerc','PIDs']} for row in (json.loads(line) for line in data.splitlines() if line)]
+    return await asyncio.to_thread(collect)
+   samples=[];done=False
+   async def sample():
+    while not done:
+     samples.append(await host_stats());await asyncio.sleep(4)
+   sampling=asyncio.create_task(sample())
+   try:
+    with tempfile.NamedTemporaryFile(mode='w',suffix='.lua',delete=True) as script:
+     script.write(lua);script.flush()
+     process=await asyncio.to_thread(subprocess.run,['wrk','-t2','-c'+str(concurrency),'-d'+str(duration)+'s','--latency','-s',script.name,BASE+'/api/catalog?limit=30'],env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=duration+30)
+    output=process.stdout
+    counts=dict((status,int(count)) for status,count in re.findall(r'QM_STATUS (\d+) (\d+)',output))
+    summary=re.search(r'QM_SUMMARY (\d+) (\d+)',output);p95=re.search(r'QM_P95_US ([\d.]+)',output)
+    socket_errors=re.search(r'Socket errors: connect (\d+), read (\d+), write (\d+), timeout (\d+)',output)
+    errors=sum(map(int,socket_errors.groups())) if socket_errors else 0
+    assert process.returncode==0 and summary and p95,'Native generator failed; no capacity claim'
+    count=int(summary[1]);elapsed=int(summary[2])/1e6
+    result={'label':'native-wrk-'+str(concurrency),'model':'native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee','concurrency_limit':concurrency,'duration_seconds':round(elapsed,3),'requests_completed':count,'statuses':counts,'socket_errors':errors,'successful_rps':round(counts.get('200',0)/elapsed,2),'p95_ms':round(float(p95[1])/1000,2),'generator_threads':2,'container_samples':samples,'raw_generator_output':output}
+    print(json.dumps(result),flush=True);return result
+   finally:
+    done=True;sampling.cancel()
+    try:await sampling
+    except asyncio.CancelledError:pass
+    env.pop('QM_LOAD_TOKEN',None)
+  native=[]
+  for concurrency in [100,250,500,1000]:
+   result=await native_trial(concurrency);native.append(result)
+   Path('load-verification').mkdir(exist_ok=True);Path('load-verification/native-progress.json').write_text(json.dumps(native,indent=2))
+   if result['p95_ms']>3000 or result['socket_errors'] or sum(v for k,v in result['statuses'].items() if k!='200'):break
+   await asyncio.sleep(5)
   stages=[]
   for concurrency in [100,250,500,1000]:
    result=await trial('post-optimization-'+str(concurrency),0,15,concurrency,True);stages.append(result)
@@ -103,7 +143,7 @@ print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'memory
   stages.append(await trial('sustained-with-headroom',sustainable_rate,120,500))
   target=next(r for r in stages if r['label']=='target-10000-rps')
   verified=(target['scheduled']==50000 and target['client_dropped']==0 and target['requests_completed']==50000 and target['statuses'].get('200')==50000 and not target['safety_stop'] and target['successful_rps_within_planned_window']>=9900)
-  return {'target_requested_rps':10000,'target_verified':verified,'version_under_test':'2.2.1+14','method':'external HTTPS authenticated catalog, one GitHub runner and one temporary member; closed-loop comparison, bounded open-loop target attempt, 120-second sustained test','endpoint':'GET /api/catalog?limit=30','read_only':True,'cpu_cores':info['cpu_cores'],'stages':stages}
+  return {'target_requested_rps':10000,'target_verified':verified,'version_under_test':'2.2.1+14 with catalog-cache server update','method':'external HTTPS authenticated catalog, one GitHub runner and one temporary member; closed-loop comparison, bounded open-loop target attempt, 120-second sustained test','endpoint':'GET /api/catalog?limit=30','read_only':True,'cpu_cores':info['cpu_cores'],'native_generator_stages':native,'stages':stages}
  report=asyncio.run(measure())
  try:
   health=httpx.get(BASE+'/api/health',timeout=15);report['health_after']=health.status_code
