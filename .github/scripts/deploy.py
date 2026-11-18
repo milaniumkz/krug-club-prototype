@@ -7,7 +7,8 @@ EXPECTED='SHA256:Bt3HkaktjLmWe4tB1pOK9b8gOnHuxp+tvp1hhEDtxp8'
 PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-purple-platform-2026-11-18/QazaqMetal_full_project.zip'
 SHA='a7d69870cdfbe544e0f8d8cc2db83290d92d8866f4298ebaea160bae0db0fbba'
 password=os.environ.pop('DEPLOY_SSH_PASSWORD','')
-if not password:raise SystemExit('Add the DEPLOY_SSH_PASSWORD repository Actions secret first')
+key_path=os.environ.get('DEPLOY_KEY_FILE','')
+if not password and not key_path:raise SystemExit('Configure a deployment SSH key or password')
 transport=paramiko.Transport(socket.create_connection((HOST,22),timeout=20))
 transport.get_security_options().key_types=('ssh-ed25519',)
 transport.start_client(timeout=20)
@@ -15,7 +16,11 @@ fingerprint='SHA256:'+base64.b64encode(hashlib.sha256(transport.get_remote_serve
 if not secrets.compare_digest(fingerprint,EXPECTED):
     transport.close();raise SystemExit('SSH host key changed; password was NOT sent')
 print('SSH key matches the fingerprint confirmed by the server owner.',flush=True)
-transport.auth_password('root',password);password=None
+if key_path:
+    transport.auth_publickey('root',paramiko.Ed25519Key.from_private_key_file(key_path))
+else:
+    transport.auth_password('root',password)
+password=None
 sftp=paramiko.SFTPClient.from_transport(transport)
 def command(value,stdin=None,timeout=2400):
     channel=transport.open_session(timeout=30);channel.settimeout(timeout);channel.exec_command(value)

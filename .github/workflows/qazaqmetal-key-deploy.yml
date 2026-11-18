@@ -1,0 +1,45 @@
+name: Deploy QazaqMetal using a temporary authorized SSH key
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: qazaqmetal-production-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate temporary deployment key on runner
+        run: |
+          umask 077
+          ssh-keygen -q -t ed25519 -N '' -C "qazaqmetal-run-${GITHUB_RUN_ID}" -f "${RUNNER_TEMP}/qazaqmetal-deploy"
+          mkdir -p public-deploy-key
+          cp "${RUNNER_TEMP}/qazaqmetal-deploy.pub" public-deploy-key/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qazaqmetal-public-deploy-key
+          path: public-deploy-key/*.pub
+      - name: Wait for owner to install public key through server console
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/wait_deploy_key.py
+      - run: pip install paramiko==4.0.0
+      - name: Deploy through verified SSH connection
+        env:
+          DEPLOY_KEY_FILE: ${{ runner.temp }}/qazaqmetal-deploy
+        run: python .github/scripts/deploy.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qazaqmetal-deployment-output
+          path: deployment-output/
+          if-no-files-found: ignore
+      - name: Remove temporary runner key
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/qazaqmetal-deploy" "${RUNNER_TEMP}/qazaqmetal-deploy.pub"
