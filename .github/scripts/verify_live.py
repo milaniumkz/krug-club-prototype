@@ -12,7 +12,7 @@ def remote(code,payload):
  ch=ssh.open_session();ch.exec_command('cd /opt/qazaqmetal/current && docker compose exec -T api python -c '+shlex.quote(code));ch.sendall(json.dumps(payload).encode());ch.shutdown_write();data=ch.makefile('r').read();err=ch.makefile_stderr('r').read();status=ch.recv_exit_status()
  if status:raise RuntimeError('QA administrative operation failed; no credentials logged')
  return json.loads(data) if data.strip() else None
-qa='qa-live-'+uuid.uuid4().hex[:12];admin_password=secrets.token_urlsafe(24);memberid=None;adminid=None
+qa='qa-live-'+uuid.uuid4().hex[:12];member_identifier=qa+'-member';admin_password=secrets.token_urlsafe(24);memberid=None;adminid=None
 bootstrap='''import json,sys
 from sqlalchemy import select
 from app.db import SessionLocal,User
@@ -42,8 +42,8 @@ try:
   call('POST','/api/auth/logout',{},r['token'])
  admin=call('POST','/api/auth/login',{'identifier':qa,'password':admin_password})['token']
  org=next(o for o in call('GET','/api/admin/organizations',token=admin) if o['code']=='DEMO')
- created=call('POST','/api/admin/accounts',{'name':'QA · участник приёмки','organization_id':org['id'],'employee_number':qa,'role':'member'},admin,201);memberid=created['user']['id'];temp=created['temporary_password']
- login=call('POST','/api/auth/login',{'identifier':qa,'password':temp,'organization_code':'DEMO'});token=login['token'];assert login['user']['must_change_password']
+ created=call('POST','/api/admin/accounts',{'name':'QA · участник приёмки','organization_id':org['id'],'employee_number':member_identifier,'role':'member'},admin,201);memberid=created['user']['id'];temp=created['temporary_password']
+ login=call('POST','/api/auth/login',{'identifier':member_identifier,'password':temp,'organization_code':'DEMO'});token=login['token'];assert login['user']['must_change_password']
  call('GET','/api/catalog',token=token,status=428)
  personal=secrets.token_urlsafe(24);changed=call('POST','/api/auth/password',{'old_password':temp,'new_password':personal},token);token=changed['token'];assert not changed['user']['must_change_password']
  call('GET','/api/auth/me',token=token);call('GET','/api/auth/sessions',token=token)
@@ -75,7 +75,7 @@ try:
   page=ctx.new_page();page.goto(BASE);page.wait_for_timeout(3000)
   if page.locator('flt-semantics-placeholder').count():page.locator('flt-semantics-placeholder').evaluate('(e)=>e.click()')
   page.wait_for_timeout(500)
-  for label,value in [('Табельный номер / телефон / логин',qa),('Пароль',personal)]:
+  for label,value in [('Табельный номер / телефон / логин',member_identifier),('Пароль',personal)]:
    field=page.get_by_role('textbox',name=label,exact=True);field.click();page.wait_for_timeout(250);page.keyboard.press('ControlOrMeta+A');page.keyboard.insert_text(value)
   page.get_by_role('button',name='Войти',exact=True).click();page.wait_for_timeout(2500)
   assert ctx.request.get(BASE+'/api/auth/me').status==200
