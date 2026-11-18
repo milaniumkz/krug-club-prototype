@@ -1,0 +1,24 @@
+name: Encrypted administrator handoff requested by owner
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  handoff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install paramiko==4.0.0
+      - name: Encrypt admin access for owner
+        env:
+          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+        run: python .github/scripts/handoff_admin.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-admin-handoff
+          path: encrypted-handoff/admin-access.enc
+          retention-days: 1
