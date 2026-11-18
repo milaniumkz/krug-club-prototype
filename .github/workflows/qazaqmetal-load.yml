@@ -1,6 +1,17 @@
 name: Measure authorized staged read-only server capacity
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        default: full
+        options: [full, stability]
+      stability_rate:
+        type: string
+        default: '200'
+      stability_seconds:
+        type: string
+        default: '300'
 permissions:
   contents: read
 concurrency:
@@ -20,6 +31,9 @@ jobs:
       - name: Measure bounded stages with automatic stop thresholds
         env:
           DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          QM_LOAD_MODE: ${{ inputs.mode || 'full' }}
+          QM_STABILITY_RATE: ${{ inputs.stability_rate || '200' }}
+          QM_STABILITY_SECONDS: ${{ inputs.stability_seconds || '300' }}
         run: python .github/scripts/load_readonly.py
       - uses: actions/upload-artifact@v4
         if: always()

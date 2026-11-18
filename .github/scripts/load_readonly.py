@@ -123,6 +123,12 @@ print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'cpu_qu
     try:await sampling
     except asyncio.CancelledError:pass
     env.pop('QM_LOAD_TOKEN',None)
+  if os.getenv('QM_LOAD_MODE') == 'stability':
+   rate=int(os.getenv('QM_STABILITY_RATE','200'));duration=int(os.getenv('QM_STABILITY_SECONDS','300'))
+   assert 1<=rate<=500 and 60<=duration<=300,'Bounded stability configuration required'
+   stage=await trial('stability-'+str(rate)+'-rps',rate,duration,1000)
+   passed=(not stage['safety_stop'] and stage['client_dropped']==0 and stage['unoffered_due_to_abort']==0 and stage['statuses'].get('200')==rate*duration and stage['requests_completed']==rate*duration)
+   return {'target_requested_rps':10000,'target_verified':False,'mode':'stability','stability_passed':passed,'read_only':True,'version_under_test':'asynchronous catalog with live DB authorization','endpoint':'GET /api/catalog?limit=30','cpu_cores':info['cpu_cores'],'stages':[stage]}
   native=[]
   for concurrency in [100,250,500,1000]:
    result=await native_trial(concurrency);native.append(result)
