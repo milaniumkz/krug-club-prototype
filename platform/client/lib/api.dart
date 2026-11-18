@@ -128,11 +128,19 @@ class Api extends ChangeNotifier {
     super.dispose();
   }
 
+  Future<void> resetLocalPin(String userId) async {
+    for (final suffix in ['', '-biometrics', '-attempts', '-blocked']) {
+      await storage.delete(key: 'local-pin-$userId$suffix');
+    }
+  }
+
   Future<void> clear() async {
+    final previousUserId = user?['id']?.toString();
     ++_watchGeneration;
     _watchClient?.close();
     user = null;
     token = null;
+    if (previousUserId != null) await resetLocalPin(previousUserId);
     if (!kIsWeb) {
       await storage.delete(key: 'session');
     }
@@ -199,14 +207,16 @@ class Api extends ChangeNotifier {
   }
 
   Future<void> login(String id, String password, String org) async {
-    await accept(
-      await post('/auth/login', {
-        'identifier': id,
-        'password': password,
-        'organization_code': org,
-        'portal': portal,
-      }),
-    );
+    final result = await post('/auth/login', {
+      'identifier': id,
+      'password': password,
+      'organization_code': org,
+      'portal': portal,
+    });
+    // A credential login starts a new PIN lifecycle. Boot and password rotation
+    // retain the PIN belonging to the continuing authenticated session.
+    await resetLocalPin(s(result['user']['id']));
+    await accept(result);
   }
 
   Future<void> password(String old, String value) async {

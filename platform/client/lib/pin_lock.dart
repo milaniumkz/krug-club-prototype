@@ -32,7 +32,8 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
       creating = false,
       locked = true,
       busy = false,
-      enabled = false;
+      enabled = false,
+      confirming = false;
   String? error;
   String get key => 'local-pin-${widget.api.user!['id']}';
   String hash(String salt, String value) =>
@@ -125,7 +126,10 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
       return;
     }
     if (creating && pin.text != confirmation.text) {
-      setState(() => error = 'PIN-коды должны совпадать');
+      setState(() {
+        error = 'PIN-коды должны совпадать';
+        confirmation.clear();
+      });
       return;
     }
     setState(() {
@@ -307,7 +311,11 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 20),
                   AppText(
-                    creating ? 'Создайте PIN-код' : 'Введите PIN-код',
+                    creating
+                        ? (confirming
+                              ? 'Повторите PIN-код'
+                              : 'Создайте PIN-код')
+                        : 'Введите PIN-код',
                     style: titleStyle(30),
                     textAlign: TextAlign.center,
                   ),
@@ -319,26 +327,37 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  TextField(
-                    controller: pin,
-                    keyboardType: TextInputType.number,
-                    obscureText: true,
-                    maxLength: 6,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(labelText: tx('PIN-код')),
-                    onSubmitted: (_) => creating ? null : submit(),
+                  PinPad(
+                    value: confirming ? confirmation.text : pin.text,
+                    label: creating && confirming
+                        ? 'Повторите PIN-код'
+                        : 'PIN-код',
+                    enabled: !busy,
+                    onChanged: (value) {
+                      setState(() {
+                        (confirming ? confirmation : pin).text = value;
+                        error = null;
+                      });
+                      if (value.length == 6) {
+                        if (creating && !confirming) {
+                          setState(() => confirming = true);
+                        } else {
+                          submit();
+                        }
+                      }
+                    },
                   ),
-                  if (creating)
-                    TextField(
-                      controller: confirmation,
-                      keyboardType: TextInputType.number,
-                      obscureText: true,
-                      maxLength: 6,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        labelText: tx('Повторите PIN-код'),
-                      ),
-                      onSubmitted: (_) => submit(),
+                  if (creating && confirming)
+                    TextButton(
+                      onPressed: busy
+                          ? null
+                          : () => setState(() {
+                              confirming = false;
+                              pin.clear();
+                              confirmation.clear();
+                              error = null;
+                            }),
+                      child: const AppText('Изменить PIN-код'),
                     ),
                   if (error != null)
                     Padding(
@@ -348,10 +367,11 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
                         style: const TextStyle(color: Colors.red),
                       ),
                     ),
-                  ActionButton(
-                    creating ? 'Сохранить PIN-код' : 'Открыть приложение',
-                    onPressed: busy ? null : submit,
-                  ),
+                  if (busy)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
                   if (enabled && !kIsWeb)
                     TextButton.icon(
                       onPressed: busy ? null : biometric,
@@ -372,6 +392,116 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
   }
 }
 
+/// Bank-style PIN input: no editable field, clipboard or operating-system keyboard.
+class PinPad extends StatelessWidget {
+  final String value, label;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+  const PinPad({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.label = 'PIN-код',
+    this.enabled = true,
+  });
+
+  void digit(String digit) {
+    if (enabled && value.length < 6) {
+      HapticFeedback.selectionClick();
+      onChanged(value + digit);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Focus(
+    autofocus: true,
+    onKeyEvent: (_, event) {
+      if (!enabled || event is! KeyDownEvent) return KeyEventResult.ignored;
+      if (event.logicalKey == LogicalKeyboardKey.backspace) {
+        if (value.isNotEmpty) onChanged(value.substring(0, value.length - 1));
+        return KeyEventResult.handled;
+      }
+      final character = event.character;
+      if (character != null && RegExp(r'^\d$').hasMatch(character)) {
+        digit(character);
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    },
+    child: Column(
+      children: [
+        if (label != 'PIN-код') AppText(label, textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        Semantics(
+          label: tx(
+            'Введено {0} из 6 цифр',
+          ).replaceFirst('{0}', '${value.length}'),
+          child: ExcludeSemantics(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                6,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  width: 15,
+                  height: 15,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: index < value.length ? purple : Colors.transparent,
+                    border: Border.all(
+                      color: purple.withValues(alpha: .45),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 14,
+          childAspectRatio: 1.65,
+          children: [
+            for (final number in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+              _number(number),
+            const SizedBox.shrink(),
+            _number('0'),
+            IconButton(
+              key: const ValueKey('pin-delete'),
+              tooltip: tx('Удалить цифру'),
+              onPressed: enabled && value.isNotEmpty
+                  ? () => onChanged(value.substring(0, value.length - 1))
+                  : null,
+              icon: const Icon(Icons.backspace_outlined, size: 26),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _number(String number) => FilledButton.tonal(
+    key: ValueKey('pin-digit-$number'),
+    onPressed: enabled ? () => digit(number) : null,
+    style: FilledButton.styleFrom(
+      backgroundColor: purple.withValues(alpha: .065),
+      foregroundColor: const Color(0xff241b32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      padding: EdgeInsets.zero,
+    ),
+    child: Text(
+      number,
+      style: const TextStyle(fontSize: 29, fontWeight: FontWeight.w500),
+    ),
+  );
+}
+
 class PinSettingsPage extends StatefulWidget {
   final Api api;
   const PinSettingsPage({super.key, required this.api});
@@ -384,6 +514,7 @@ class _PinSettingsPageState extends State<PinSettingsPage> {
       next = TextEditingController(),
       repeat = TextEditingController();
   bool busy = false, enabled = false;
+  int step = 0;
   String? error;
   String get key => 'local-pin-${widget.api.user!['id']}';
   @override
@@ -405,7 +536,10 @@ class _PinSettingsPageState extends State<PinSettingsPage> {
   Future<void> save() async {
     if (busy) return;
     if (!RegExp(r'^\d{6}$').hasMatch(next.text) || next.text != repeat.text) {
-      setState(() => error = 'Введите 6 цифр и повторите PIN-код');
+      setState(() {
+        error = 'Введите 6 цифр и повторите PIN-код';
+        repeat.clear();
+      });
       return;
     }
     setState(() => busy = true);
@@ -432,7 +566,15 @@ class _PinSettingsPageState extends State<PinSettingsPage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) setState(() => error = '$e');
+      if (mounted) {
+        setState(() {
+          error = '$e';
+          step = 0;
+          current.clear();
+          next.clear();
+          repeat.clear();
+        });
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -477,21 +619,40 @@ class _PinSettingsPageState extends State<PinSettingsPage> {
           ),
         if (kIsWeb) const AppText('В браузере используется PIN-код.'),
         const SizedBox(height: 20),
-        for (final entry in [
-          (current, 'Текущий PIN-код'),
-          (next, 'Новый PIN-код'),
-          (repeat, 'Повторите PIN-код'),
-        ])
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: TextField(
-              controller: entry.$1,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(labelText: tx(entry.$2)),
-            ),
+        PinPad(
+          value: [current, next, repeat][step].text,
+          label: [
+            'Текущий PIN-код',
+            'Новый PIN-код',
+            'Повторите PIN-код',
+          ][step],
+          enabled: !busy,
+          onChanged: (value) {
+            setState(() {
+              [current, next, repeat][step].text = value;
+              error = null;
+            });
+            if (value.length == 6) {
+              if (step < 2) {
+                setState(() => step++);
+              } else {
+                save();
+              }
+            }
+          },
+        ),
+        if (step > 0)
+          TextButton(
+            onPressed: busy
+                ? null
+                : () => setState(() {
+                    step = 0;
+                    current.clear();
+                    next.clear();
+                    repeat.clear();
+                    error = null;
+                  }),
+            child: const AppText('Начать заново'),
           ),
         if (error != null)
           AppText(error!, style: const TextStyle(color: Colors.red)),

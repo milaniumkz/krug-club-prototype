@@ -98,25 +98,25 @@ def current_user(request: Request, db=Depends(get_db)):
     return user
 
 
-def ready_user(user=Depends(current_user)):
+async def ready_user(user=Depends(current_user)):
     if user.must_change_password:
         raise HTTPException(428, 'Установите собственный пароль')
     return user
 
 
-def admin(user=Depends(ready_user)):
+async def admin(user=Depends(ready_user)):
     if user.role != 'admin':
         raise HTTPException(403, 'Нужны права администратора')
     return user
 
 
-def manager(user=Depends(ready_user)):
+async def manager(user=Depends(ready_user)):
     if user.role not in ('admin', 'partner'):
         raise HTTPException(403, 'Нужны права управления')
     return user
 
 
-def member(user=Depends(ready_user)):
+async def member(user=Depends(ready_user)):
     if user.role != 'member':
         raise HTTPException(403, 'Раздел для членов профсоюза')
     if user.member_until and user.member_until < now():

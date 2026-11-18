@@ -1,7 +1,7 @@
 name: qazaqmetal
 description: QAZAQMETAL KÁSIPODAǴY member and partner platform
 publish_to: none
-version: 2.2.0+13
+version: 2.2.1+14
 environment:
   sdk: '>=3.10.0 <4.0.0'
 dependencies:

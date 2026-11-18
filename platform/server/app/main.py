@@ -1,9 +1,7 @@
-import asyncio
 import copy
 from functools import lru_cache
 from typing import Literal
 import httpx
-import weakref
 import csv
 import io
 import math
@@ -27,6 +25,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from . import schemas as S
 from . import session_events
+from .middleware import Protection
 from .notifications import offer_approved
 from .db import PushDevice, Notification
 from starlette.concurrency import run_in_threadpool
@@ -52,61 +51,9 @@ TILE_ORIGIN = urlsplit(TILE_URL).scheme + '://' + urlsplit(TILE_URL).netloc.repl
 if PRODUCTION and not TILE_URL.startswith('https://'):
     raise RuntimeError('Production map tiles must use HTTPS')
 Image.MAX_IMAGE_PIXELS = 20_000_000
-# Bound synchronous database work before it occupies AnyIO worker threads.
-# Otherwise thousands of waiting dependencies can starve request cleanup.
-_admission = weakref.WeakKeyDictionary()
-
-
-
-@app.middleware('http')
-async def protection(request, call_next):
-    if request.method not in ('GET', 'HEAD', 'OPTIONS'):
-        origin = request.headers.get('origin')
-        allowed_origin = ORIGIN
-        portal_hosts = {os.getenv(key, '').lower() for key in ('MEMBER_HOST', 'PARTNER_HOST', 'ADMIN_HOST')}
-        if PRODUCTION and request.url.hostname in portal_hosts:
-            allowed_origin = 'https://' + request.url.hostname
-        if origin and origin != allowed_origin:
-            return JSONResponse({'detail': 'Недопустимый источник запроса'}, status_code=403)
-        if request.cookies.get(COOKIE) and request.headers.get('x-qm-client') != 'web':
-            return JSONResponse({'detail': 'Недопустимый запрос'}, status_code=403)
-        length = request.headers.get('content-length')
-        if length and (not length.isdigit() or int(length) > 9 * 1024 * 1024):
-            return JSONResponse({'detail': 'Файл слишком большой'}, status_code=413)
-    if request.url.path.startswith('/api/') and request.url.path not in ('/api/meta', '/api/health', '/api/auth/watch'):
-        loop = asyncio.get_running_loop()
-        gate = _admission.setdefault(loop, asyncio.Semaphore(10))
-        try:
-            # Only admission is timed: never cancel a running write halfway through.
-            await asyncio.wait_for(gate.acquire(), timeout=30)
-        except TimeoutError:
-            response = JSONResponse({'detail': 'Сервер занят. Повторите запрос'},
-                                    status_code=503, headers={'Retry-After': '2'})
-        else:
-            try:
-                response = await call_next(request)
-            finally:
-                gate.release()
-    else:
-        response = await call_next(request)
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['Referrer-Policy'] = 'same-origin'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['Permissions-Policy'] = 'camera=(self), geolocation=(self), microphone=()'
-    response.headers['Content-Security-Policy'] = (
-        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; "
-        f"img-src 'self' data: blob: {TILE_ORIGIN} https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.tile.openstreetmap.fr https://tiles.openfreemap.org; "
-        f"connect-src 'self' blob: {TILE_ORIGIN} https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.tile.openstreetmap.fr https://tiles.openfreemap.org; "
-        f"font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; "
-        f"media-src 'self' blob:; "
-    )
-    if request.url.path.startswith('/api/'):
-        response.headers['Cache-Control'] = 'no-store'
-    elif request.url.path in ('/', '/index.html', '/flutter_bootstrap.js', '/version.json'):
-        response.headers['Cache-Control'] = 'no-cache'
-    if PRODUCTION:
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    return response
+# Direct ASGI preserves streaming and avoids per-request task/stream allocation.
+app.add_middleware(Protection, origin=ORIGIN, tile_origin=TILE_ORIGIN,
+                   production=PRODUCTION, cookie=COOKIE)
 
 
 @app.exception_handler(RequestValidationError)
