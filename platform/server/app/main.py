@@ -575,6 +575,8 @@ def media(name: str, user=Depends(ready_user)):
 @app.get('/api/workspace/stats')
 def stats(start: date | None = None, end: date | None = None, venue_id: str = '',
           organization_id: str = '', user=Depends(manager), db=Depends(get_db)):
+    if start and end and end < start:
+        raise HTTPException(422, 'Дата окончания раньше начала')
     query = select(Visit)
     if user.role == 'partner':
         query = query.where(Visit.partner_id == user.partner_id)
@@ -583,18 +585,19 @@ def stats(start: date | None = None, end: date | None = None, venue_id: str = ''
     if organization_id and user.role == 'admin':
         query = query.where(Visit.organization_id == organization_id)
     if start:
-        query = query.where(Visit.created_at >= datetime.combine(start, time.min))
+        query = query.where(Visit.created_at >= datetime.combine(start, time.min) - timedelta(hours=5))
     if end:
-        query = query.where(Visit.created_at < datetime.combine(end + timedelta(days=1), time.min))
+        query = query.where(Visit.created_at < datetime.combine(end + timedelta(days=1), time.min) - timedelta(hours=5))
     total, unique = db.execute(query.with_only_columns(
         func.count(Visit.id), func.count(func.distinct(Visit.user_id)))).one()
     venues = [dict(venue_id=venue_id, name=name, uses=uses)
               for venue_id, name, uses in db.execute(query.with_only_columns(
                   Visit.venue_id, func.max(Visit.venue_name), func.count(Visit.id))
                   .group_by(Visit.venue_id)).all()]
+    local_day = (func.date(Visit.created_at, '+5 hours') if db.get_bind().dialect.name == 'sqlite'
+                 else func.date(Visit.created_at + text("INTERVAL '5 hours'")))
     days = {str(day): count for day, count in db.execute(query.with_only_columns(
-        func.date(Visit.created_at), func.count(Visit.id))
-        .group_by(func.date(Visit.created_at))).all()}
+        local_day, func.count(Visit.id)).group_by(local_day)).all()}
     visits = db.scalars(query.order_by(Visit.created_at.desc()).limit(500)).all()
     return {'total_uses': total, 'unique_members': unique,
             'venues': venues, 'days': days,
@@ -661,7 +664,7 @@ def create_account(db, body, actor):
     values = body.model_dump()
     values['username'] = values['username'].casefold() if values['username'] else None
     if values['member_until']:
-        values['member_until'] = datetime.combine(values['member_until'], time.max)
+        values['member_until'] = datetime.combine(values['member_until'], time.max) - timedelta(hours=5)
     account = User(**values, password_hash=hash_password(password), must_change_password=True)
     db.add(account)
     db.flush()

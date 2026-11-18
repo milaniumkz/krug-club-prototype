@@ -1065,15 +1065,19 @@ class _StatsPageState extends State<StatsPage> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
-    if (d != null) {
-      setState(() {
-        if (first) {
-          start = d;
-        } else {
-          end = d;
-        }
-      });
+    if (d == null || !mounted) return;
+    final nextStart = first ? d : start, nextEnd = first ? end : d;
+    if (nextStart != null && nextEnd != null && nextEnd.isBefore(nextStart)) {
+      toast(context, 'Дата окончания раньше начала');
+      return;
     }
+    setState(() {
+      if (first) {
+        start = d;
+      } else {
+        end = d;
+      }
+    });
   }
 
   @override

@@ -406,3 +406,32 @@ def test_csp_supports_local_browser_file_selection_without_opening_remote_origin
     assert "connect-src 'self' blob:" in policy
     assert "frame-ancestors 'none'" in policy
     assert "object-src 'none'" in policy
+
+
+def test_statistics_filter_and_group_on_kazakhstan_calendar_days(world):
+    from datetime import datetime
+    c,a,p,m,venue,offer,_=setup_catalog(world)
+    with world[1]() as db:
+        member=db.scalar(select(User).where(User.employee_number=='1001'))
+        for moment in ['2026-11-17T18:59:00','2026-11-17T19:01:00','2026-11-18T18:59:00','2026-11-18T19:01:00']:
+            db.add(Visit(request_id=str(uuid.uuid4()),user_id=member.id,organization_id=member.organization_id,
+                partner_id=venue['partner_id'],venue_id=venue['id'],offer_id=offer['id'],
+                venue_name='QA',offer_name='QA discount',percent=15,created_at=datetime.fromisoformat(moment)))
+        db.commit()
+    result=c.get('/api/workspace/stats?start=2026-11-18&end=2026-11-18',headers=p)
+    assert result.status_code==200
+    assert result.json()['total_uses']==2
+    assert result.json()['days']=={'2026-11-18':2}
+    assert len(result.json()['operations'])==2
+    assert c.get('/api/workspace/stats?start=2026-11-19&end=2026-11-18',headers=a).status_code==422
+
+
+def test_optional_membership_expiry_is_end_of_day_in_kazakhstan(world):
+    from datetime import datetime,timezone
+    c,_,ids=world;a=login(c,'admin')
+    result=c.post('/api/admin/accounts',headers=a,json={'name':'QA member','organization_id':ids['org'],
+        'employee_number':'KZ-001','member_until':'2027-01-31'})
+    assert result.status_code==201
+    until=datetime.fromisoformat(result.json()['user']['member_until'].replace('Z','+00:00'))
+    local=until.astimezone(timezone(timedelta(hours=5)))
+    assert local.date().isoformat()=='2027-01-31' and local.hour==23 and local.minute==59

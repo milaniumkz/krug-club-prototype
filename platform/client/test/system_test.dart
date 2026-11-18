@@ -325,4 +325,11 @@ void main() {
     expect(find.text('Сохранить / поделиться QR'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  test(
+    'History timestamps use the Kazakhstan calendar day across UTC midnight',
+    () {
+      expect(displayMoment('2026-11-17T19:01:00Z'), '18.11.2026 · 00:01');
+      expect(displayMoment('2026-11-18T18:59:00Z'), '18.11.2026 · 23:59');
+    },
+  );
 }

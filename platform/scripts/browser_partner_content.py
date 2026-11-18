@@ -1,8 +1,15 @@
 """Partner editor/upload/QR export workflow against isolated QA, including the real browser PNG download."""
 import argparse,json,re,shutil,tempfile,time
 from pathlib import Path
+from PIL import Image
 from playwright.sync_api import sync_playwright
 p=argparse.ArgumentParser();p.add_argument('--url',default='http://127.0.0.1:8018');p.add_argument('--credentials',type=Path,required=True);p.add_argument('--private-dir',type=Path,required=True);p.add_argument('--output',type=Path,default=Path('artifacts/partner-content'));a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True);creds=json.loads(a.credentials.read_text());assert all(v['identifier'].lower().startswith('qa') for v in creds.values());a.private_dir.mkdir(parents=True,exist_ok=True);a.private_dir.chmod(0o700);results=[];suffix=str(int(time.time()));venue_name='QA — новое кафе '+suffix
+def fixture(name,source,color):
+ if source.is_file():return source
+ file=a.private_dir/name
+ Image.new('RGB',(640,400),color).save(file)
+ return file
+
 
 def record(name,fn):
  try:fn();results.append({'case':name,'status':'PASS'})
@@ -31,7 +38,7 @@ with sync_playwright() as pw:
   menu(op,'Заведения');op.get_by_role('button',name='Добавить',exact=True).click();op.wait_for_timeout(700)
   for label,value in [('Название',venue_name),('Описание','QA — подробное описание уютного кафе и условий посещения.'),('Категория','Кафе'),('Адрес','QA — тестовый адрес 18'),('Телефон заведения','+77000000000'),('Режим работы','10:00–22:00'),('Широта','52.286'),('Долгота','76.969')]:fill(op,label,value)
   with op.expect_file_chooser() as chooser:seek(op,op.get_by_role('button',name='Загрузить фотографию / баннер',exact=True)).click()
-  photo=Path(__file__).resolve().parents[2]/'mobile/assets/restaurant-reference.png'
+  photo=fixture('venue-qa.png',Path(__file__).resolve().parents[2]/'mobile/assets/restaurant-reference.png','#b79ad2')
   with op.expect_response(lambda r:r.request.method=='POST' and r.url.endswith('/api/media')) as pending:chooser.value.set_files(str(photo))
   assert pending.value.status==201
   op.wait_for_timeout(600);seek(op,op.get_by_role('button',name='Отправить на модерацию',exact=True)).click();op.wait_for_timeout(800)
@@ -58,7 +65,7 @@ with sync_playwright() as pw:
  def submit_banner():
   menu(op,'Баннеры');op.get_by_role('button',name='Добавить',exact=True).click();op.wait_for_timeout(800);choose_venue();fill(op,'Название','QA — баннер '+suffix);fill(op,'Описание','QA — объявление для участников')
   with op.expect_file_chooser() as chooser:seek(op,op.get_by_role('button',name='Загрузить фотографию / баннер',exact=True)).click()
-  with op.expect_response(lambda r:r.request.method=='POST' and r.url.endswith('/api/media')) as pending:chooser.value.set_files(str(Path(__file__).resolve().parents[2]/'mobile/assets/flora.png'))
+  with op.expect_response(lambda r:r.request.method=='POST' and r.url.endswith('/api/media')) as pending:chooser.value.set_files(str(fixture('banner-qa.png',Path(__file__).resolve().parents[2]/'mobile/assets/flora.png','#e7d9f0')))
   assert pending.value.status==201;op.wait_for_timeout(500);seek(op,op.get_by_role('button',name='Отправить на модерацию',exact=True)).click();op.wait_for_timeout(600)
   banner=next(v for v in owner.request.get(a.url+'/api/workspace/resources?kind=banner').json() if v['venue_id']==state['venue']['id']);state['banner']=banner
   assert not any(v['id']==banner['id'] for v in member.request.get(a.url+'/api/banners').json())
