@@ -5,7 +5,7 @@ import paramiko
 HOST='109.235.119.144';DOMAIN='qazaqmetal.109.235.119.144.sslip.io'
 EXPECTED='SHA256:Bt3HkaktjLmWe4tB1pOK9b8gOnHuxp+tvp1hhEDtxp8'
 PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-testing-2026-11-18/QazaqMetal_full_project.zip'
-SHA='2d8c6ced7601a4422d9feb93501683e4463c605c4c7b3adb0ad27fb4d5285dce'
+SHA='1edc22df0a07cd92c66e5308d65ff222d37515f71370b4c984ae23e46d28bf5e'
 ASSETS_PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-testing-2026-11-18/QazaqMetal_demo_assets.zip'
 ASSETS_SHA='f182e31a8f08045d9b4074cc87c08a33d013992e0e0afbcd3e975f2c7cbe6941'
 password=os.environ.pop('DEPLOY_SSH_PASSWORD','')
