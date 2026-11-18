@@ -103,13 +103,16 @@ try:
   page.get_by_role('button',name='Войти',exact=True).click();page.wait_for_timeout(1300)
   fill('Временный пароль',browser_temporary);fill('Новый пароль',personal);fill('Повторите новый пароль',personal)
   page.get_by_role('button',name='Сохранить пароль',exact=True).click();page.wait_for_timeout(1800)
-  fill('PIN-код','472918',True);fill('Повторите PIN-код','472918',True)
-  page.get_by_role('button',name='Сохранить PIN-код',exact=True).click();page.wait_for_timeout(2000)
+  def enter_pin(value):
+   for digit in value:
+    page.get_by_role('button',name=digit,exact=True).click();page.wait_for_timeout(100)
+   page.wait_for_timeout(400)
+  enter_pin('472918');page.screenshot(path=str(out/'pin-confirmation.png'));enter_pin('472918');page.wait_for_timeout(2000)
   assert ctx.request.get(BASE+'/api/auth/me').status==200
   page.get_by_role('tab',name='Главная',exact=True).wait_for()
   page.screenshot(path=str(out/'home.png'))
-  page.reload();enable();fill('PIN-код','472918',True)
-  page.get_by_role('button',name='Открыть приложение',exact=True).click();page.wait_for_timeout(1200)
+  page.reload();enable();enter_pin('472918')
+  page.wait_for_timeout(1200)
   checks.append({'case':'first password with six characters, PIN setup and saved-session PIN unlock','result':'PASS'})
   for tab in ['Партнёры','На карте','QR','Профиль','Главная']:
    page.get_by_role('tab',name=tab,exact=True).click();page.wait_for_timeout(1400)
