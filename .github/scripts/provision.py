@@ -1,7 +1,7 @@
 """Run on the authorized host. Passwords generated here never enter repository/logs."""
 import json,os,secrets,subprocess,sys,time,zipfile
 from pathlib import Path
-ROOT=Path('/opt/qazaqmetal'); shared=ROOT/'shared'; release=ROOT/'releases'/'38b3179550d3024bcc084a340dbb3c5c79392129'
+ROOT=Path('/opt/qazaqmetal'); shared=ROOT/'shared'; release=ROOT/'releases'/'2.2.0-fa65460bfd3d'
 def run(args,**kwargs):
     return subprocess.run(args,check=True,**kwargs)
 # Inspect before changing the host. Preserve existing services and app data.
@@ -31,8 +31,13 @@ if not config.exists():
     values={'DOMAIN':'qazaqmetal.109.235.119.144.sslip.io','ACME_EMAIL':'not-configured','DB_PASSWORD':secrets.token_urlsafe(36),'ROOT_DB_PASSWORD':secrets.token_urlsafe(36),'MAP_TILE_URL':'https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png','MAP_ATTRIBUTION':'© OpenStreetMap contributors · Tiles OSM France','COMPOSE_PROJECT_NAME':'qazaqmetal','COMPOSE_FILE':'compose.yaml:/opt/qazaqmetal/shared/compose.production.override.yaml'}
     fd=os.open(config,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
     with os.fdopen(fd,'w') as f:f.write('\n'.join(f'{k}={v}' for k,v in values.items())+'\n')
-# ACME contact email is optional; omit it until supplied, use normal public TLS validation.
-(shared/'Caddyfile').write_text('''{$DOMAIN} {
+# Add role portals without changing the existing database passwords.
+with config.open('a') as f:
+    text=config.read_text()
+    for key,value in {'PARTNER_HOST':'qazaqmetalpartners.109.235.119.144.sslip.io','ADMIN_HOST':'qazaqmetaladmin.109.235.119.144.sslip.io'}.items():
+        if key+'=' not in text:f.write(key+'='+value+'\n')
+# ACME contact email is optional; use normal public TLS validation.
+(shared/'Caddyfile').write_text('''{$DOMAIN}, {$PARTNER_HOST}, {$ADMIN_HOST} {
  encode zstd gzip
  request_body {
   max_size 9MB

@@ -4,14 +4,17 @@ from pathlib import Path
 import paramiko
 HOST='109.235.119.144';DOMAIN='qazaqmetal.109.235.119.144.sslip.io'
 EXPECTED='SHA256:Bt3HkaktjLmWe4tB1pOK9b8gOnHuxp+tvp1hhEDtxp8'
-PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-purple-platform-2026-11-18/QazaqMetal_full_project.zip'
-SHA='a7d69870cdfbe544e0f8d8cc2db83290d92d8866f4298ebaea160bae0db0fbba'
+PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-testing-2026-11-18/QazaqMetal_full_project.zip'
+SHA='2d8c6ced7601a4422d9feb93501683e4463c605c4c7b3adb0ad27fb4d5285dce'
+ASSETS_PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-testing-2026-11-18/QazaqMetal_demo_assets.zip'
+ASSETS_SHA='f182e31a8f08045d9b4074cc87c08a33d013992e0e0afbcd3e975f2c7cbe6941'
 password=os.environ.pop('DEPLOY_SSH_PASSWORD','')
 key_path=os.environ.get('DEPLOY_KEY_FILE','')
 if not password and not key_path:raise SystemExit('Configure a deployment SSH key or password')
 transport=paramiko.Transport(socket.create_connection((HOST,22),timeout=20))
 transport.get_security_options().key_types=('ssh-ed25519',)
 transport.start_client(timeout=20)
+transport.set_keepalive(30)
 fingerprint='SHA256:'+base64.b64encode(hashlib.sha256(transport.get_remote_server_key().asbytes()).digest()).decode().rstrip('=')
 if not secrets.compare_digest(fingerprint,EXPECTED):
     transport.close();raise SystemExit('SSH host key changed; password was NOT sent')
@@ -22,9 +25,11 @@ else:
     transport.auth_password('root',password)
 password=None
 sftp=paramiko.SFTPClient.from_transport(transport)
+sftp.get_channel().settimeout(45)
 def command(value,stdin=None,timeout=2400):
     channel=transport.open_session(timeout=30);channel.settimeout(timeout);channel.exec_command(value)
-    if stdin is not None:channel.sendall(stdin);channel.shutdown_write()
+    if stdin is not None:channel.sendall(stdin)
+    channel.shutdown_write()
     out=[]
     while True:
         if channel.recv_ready():
@@ -37,15 +42,14 @@ def command(value,stdin=None,timeout=2400):
     return ''.join(out)
 try:
     command('install -d -m 700 /opt/qazaqmetal/incoming')
-    local=Path('project.zip');urllib.request.urlretrieve(PACKAGE,local)
-    if hashlib.sha256(local.read_bytes()).hexdigest()!=SHA:raise SystemExit('Release package SHA256 mismatch')
-    sftp.put(str(local),'/opt/qazaqmetal/incoming/project.zip')
+    command('curl -fL --retry 3 --connect-timeout 15 --max-time 180 '+shlex.quote(PACKAGE)+' -o /opt/qazaqmetal/incoming/project.zip')
     command("echo '"+SHA+"  /opt/qazaqmetal/incoming/project.zip' | sha256sum --check --status")
     for name in ('provision.py','seed_demo.py'):
         sftp.put('.github/scripts/'+name,'/opt/qazaqmetal/incoming/'+name)
     command('python3 /opt/qazaqmetal/incoming/provision.py')
-    command('install -d -m 755 /opt/qazaqmetal/incoming/demo-assets')
-    for file in Path('.github/demo-assets').iterdir():sftp.put(str(file),'/opt/qazaqmetal/incoming/demo-assets/'+file.name)
+    command('curl -fL --retry 3 --connect-timeout 15 --max-time 120 '+shlex.quote(ASSETS_PACKAGE)+' -o /opt/qazaqmetal/incoming/demo-assets.zip')
+    command("echo '"+ASSETS_SHA+"  /opt/qazaqmetal/incoming/demo-assets.zip' | sha256sum --check --status")
+    command("python3 -c \"import zipfile; zipfile.ZipFile('/opt/qazaqmetal/incoming/demo-assets.zip').extractall('/opt/qazaqmetal/incoming/demo-assets')\"")
     command('cd /opt/qazaqmetal/current && docker compose cp /opt/qazaqmetal/incoming/seed_demo.py api:/tmp/seed_demo.py && docker compose cp /opt/qazaqmetal/incoming/demo-assets api:/tmp/qazaqmetal-demo-assets')
     # Admin secret remains only in a root-readable host file, never in public artifacts/logs.
     credentials='/opt/qazaqmetal/shared/admin-initial.json'
@@ -70,17 +74,35 @@ try:
             if attempt%6==0:print('Waiting for HTTPS certificate:',type(e).__name__,flush=True)
             time.sleep(5)
     else:raise RuntimeError('Public HTTPS did not become healthy')
-    # Verify requested accounts without changing their temporary passwords.
+    for portal in ('qazaqmetalpartners.109.235.119.144.sslip.io','qazaqmetaladmin.109.235.119.144.sslip.io'):
+        for attempt in range(40):
+            try:
+                with urllib.request.urlopen('https://'+portal+'/api/health',timeout=15) as response:
+                    assert json.load(response)=={'status':'ok'}
+                break
+            except Exception:
+                time.sleep(3)
+        else:raise RuntimeError('Role portal HTTPS not healthy: '+portal)
+    # Read only first-login flags; existing personal passwords stay unchanged.
+    flags_code = "from app.db import SessionLocal,User,Organization; from sqlalchemy import select; import json; db=SessionLocal(); org=db.scalar(select(Organization).where(Organization.code=='DEMO')); rows=db.scalars(select(User).where(((User.employee_number.in_(['01','02'])) & (User.organization_id==org.id)) | User.username.in_(['partner01','partner02']))).all(); print(json.dumps({(u.employee_number if u.role=='member' else u.username):u.must_change_password for u in rows})); db.close()"
+    flags = json.loads(command('cd /opt/qazaqmetal/current && docker compose exec -T api python -c '+shlex.quote(flags_code)).strip().splitlines()[-1])
     results=[]
+    created_sessions=[]
     for identifier in ('01','02','partner01','partner02'):
-        req=urllib.request.Request('https://'+DOMAIN+'/api/auth/login',data=json.dumps({'identifier':identifier,'password':'123456','organization_code':'DEMO' if identifier in ('01','02') else ''}).encode(),headers={'Content-Type':'application/json'})
+        if not flags[identifier]:
+            results.append({'account':identifier,'existing_personal_password':'preserved'})
+            continue
+        origin='https://'+(DOMAIN if identifier in ('01','02') else 'qazaqmetalpartners.109.235.119.144.sslip.io')
+        req=urllib.request.Request(origin+'/api/auth/login',data=json.dumps({'identifier':identifier,'password':'123456'}).encode(),headers={'Content-Type':'application/json','X-QM-Client':'web'})
         with urllib.request.urlopen(req,timeout=20) as response:login=json.load(response)
         assert login['user']['must_change_password'] is True
-        req=urllib.request.Request('https://'+DOMAIN+'/api/auth/me',headers={'Authorization':'Bearer '+login['token']})
+        created_sessions.append(hashlib.sha256(login['token'].encode()).hexdigest())
+        req=urllib.request.Request(origin+'/api/auth/me',headers={'Authorization':'Bearer '+login['token']})
         with urllib.request.urlopen(req,timeout=20) as response:assert json.load(response)['id']==login['user']['id']
-        req=urllib.request.Request('https://'+DOMAIN+'/api/auth/logout',data=b'',headers={'Authorization':'Bearer '+login['token']},method='POST')
-        with urllib.request.urlopen(req,timeout=20):pass
         results.append({'account':identifier,'login':'PASS','first_password_change':'required','session':'PASS'})
+    if created_sessions:
+        cleanup_code="from app.db import SessionLocal,Session; from sqlalchemy import delete; import json,sys; db=SessionLocal(); db.execute(delete(Session).where(Session.id.in_(json.load(sys.stdin)))); db.commit(); db.close(); print('Only verification sessions removed')"
+        command('cd /opt/qazaqmetal/current && docker compose exec -T api python -c '+shlex.quote(cleanup_code),json.dumps(created_sessions).encode())
     Path('deployment-output/verification.json').write_text(json.dumps({'url':'https://'+DOMAIN,'https':'verified','health':health,'accounts':results},indent=2))
     print('DEPLOYMENT VERIFIED: https://'+DOMAIN,flush=True)
 finally:
