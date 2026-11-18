@@ -27,24 +27,32 @@ with SessionLocal() as db:
 """,{'qa':qa,'password':personal});uid=info['id']
  login=httpx.post(BASE+'/api/auth/login',json={'identifier':qa,'password':personal},timeout=30);assert login.status_code==200;token=login.json()['token']
  async def measure():
-  stages=[];stop_reason='maximum configured concurrency reached';total_budget=60000
-  connector=aiohttp.TCPConnector(limit=5000,limit_per_host=5000,ttl_dns_cache=300)
-  timeout=aiohttp.ClientTimeout(total=15,sock_connect=10,sock_read=12)
-  async with aiohttp.ClientSession(connector=connector,timeout=timeout,headers={'Authorization':'Bearer '+token}) as client:
-   async with client.get(BASE+'/api/catalog?limit=30') as r:assert r.status==200;await r.read()
-   for concurrency in [1,10,25,50,100,250,500,1000,2500,5000]:
-    latencies=[];statuses=[];active=0;peak=0;issued=0;abort=asyncio.Event();health_checks=[]
-    began=time.perf_counter();deadline=began+15;stage_budget=min(10000,total_budget)
-    async def worker():
-     nonlocal active,peak,issued
-     while time.perf_counter()<deadline and issued<stage_budget and not abort.is_set():
-      issued+=1;start=time.perf_counter();active+=1;peak=max(peak,active)
-      try:
-       async with client.get(BASE+'/api/catalog?limit=30') as response:
-        await response.read();statuses.append(str(response.status))
-      except Exception as error:statuses.append(type(error).__name__)
-      finally:latencies.append(time.perf_counter()-start);active-=1
-      if len(statuses)>=50 and sum(v!='200' for v in statuses)/len(statuses)>.01:abort.set()
+  stats_code="""import json,os
+from pathlib import Path
+root=Path('/sys/fs/cgroup')
+def read(name):
+ try:return (root/name).read_text().strip()
+ except OSError:return None
+print(json.dumps({'cpu_cores':os.cpu_count(),'cpu_stat':read('cpu.stat'),'memory_current_bytes':read('memory.current'),'memory_limit_bytes':read('memory.max'),'load_average':os.getloadavg()}))
+"""
+  async def stats():return await asyncio.to_thread(remote,stats_code,{})
+  async def trial(label,rate,duration,concurrency,closed=False):
+   before=await stats();latencies=[];statuses=[];ends=[];active=0;peak=0;dropped=0;scheduled=0;scheduler_lag=0.;abort=asyncio.Event();health_checks=[]
+   connector=aiohttp.TCPConnector(limit=concurrency,limit_per_host=concurrency,ttl_dns_cache=300)
+   timeout=aiohttp.ClientTimeout(total=15,sock_connect=8,sock_read=12)
+   async with aiohttp.ClientSession(connector=connector,timeout=timeout,headers={'Authorization':'Bearer '+token}) as client:
+    async with client.get(BASE+'/api/catalog?limit=30') as r:assert r.status==200;await r.read()
+    began=time.perf_counter();deadline=began+duration
+    async def hit():
+     nonlocal active,peak
+     start=time.perf_counter();active+=1;peak=max(peak,active)
+     try:
+      async with client.get(BASE+'/api/catalog?limit=30') as r:await r.read();statuses.append(str(r.status))
+     except Exception as error:statuses.append(type(error).__name__)
+     finally:latencies.append(time.perf_counter()-start);ends.append(time.perf_counter()-began);active-=1
+     if len(statuses)>=50:
+      if sum(v!='200' for v in statuses[-200:])/len(statuses[-200:])>.01:abort.set()
+      if len(latencies)>=100 and sorted(latencies[-100:])[94]>3:abort.set()
     async def monitor():
      failures=0
      while time.perf_counter()<deadline and not abort.is_set():
@@ -52,25 +60,50 @@ with SessionLocal() as db:
        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=4)) as probe:
         start=time.perf_counter()
         async with probe.get(BASE+'/api/health') as response:
-         await response.read();ok=response.status==200
-         health_checks.append({'status':response.status,'seconds':round(time.perf_counter()-start,3)})
+         await response.read();ok=response.status==200;health_checks.append({'status':response.status,'seconds':round(time.perf_counter()-start,3)})
       except Exception:ok=False;health_checks.append({'status':'timeout'})
       failures=0 if ok else failures+1
       if failures>=2:abort.set();return
       await asyncio.sleep(2)
-    watcher=asyncio.create_task(monitor());await asyncio.gather(*(worker() for _ in range(concurrency)))
+    watcher=asyncio.create_task(monitor())
+    if closed:
+     async def worker():
+      while time.perf_counter()<deadline and not abort.is_set():await hit()
+     await asyncio.gather(*(worker() for _ in range(concurrency)))
+     scheduled=len(statuses)
+    else:
+     tasks=set();target=round(rate*duration);batch=max(1,round(rate/100))
+     for first in range(0,target,batch):
+      if abort.is_set():break
+      due=began+first/rate;await asyncio.sleep(max(0,due-time.perf_counter()));scheduler_lag=max(scheduler_lag,time.perf_counter()-due)
+      for i in range(first,min(first+batch,target)):
+       scheduled+=1
+       if len(tasks)>=concurrency:dropped+=1;continue
+       task=asyncio.create_task(hit());tasks.add(task);task.add_done_callback(tasks.discard)
+     await asyncio.gather(*tasks)
     watcher.cancel()
     try:await watcher
     except asyncio.CancelledError:pass
-    elapsed=time.perf_counter()-began;ordered=sorted(latencies);n=len(statuses);errors=sum(v!='200' for v in statuses);total_budget-=n
-    stage={'concurrency':concurrency,'peak_client_inflight':peak,'requests':n,'duration_seconds':round(elapsed,3),'statuses':dict(collections.Counter(statuses)),'successful_rps':round(statuses.count('200')/elapsed,2),'error_percent':round(100*errors/max(n,1),3),'p50_ms':round(ordered[n//2]*1000,2),'p95_ms':round(ordered[max(0,int(n*.95)-1)]*1000,2),'max_ms':round(max(ordered)*1000,2),'health_checks':health_checks}
-    stages.append(stage);print(json.dumps(stage),flush=True)
-    Path('load-verification').mkdir(exist_ok=True);Path('load-verification/progress.json').write_text(json.dumps(stages,indent=2))
-    if abort.is_set() or errors/max(n,1)>.01:stop_reason='error or availability safety threshold';break
-    if stage['p95_ms']>3000:stop_reason='p95 exceeded 3000 ms; higher concurrency would increase queueing';break
-    if total_budget<=0:stop_reason='bounded request budget reached';break
-    await asyncio.sleep(3)
-  return {'target_requested_rps':10000000,'target_verified':False,'method':'closed-loop staged HTTPS authenticated catalog read; one external GitHub runner, one temporary test member; not a distributed open-loop RPS test','endpoint':'GET /api/catalog?limit=30','read_only':True,'stage_duration_seconds':15,'cpu_cores':info['cpu_cores'],'stages':stages,'stop_reason':stop_reason,'best_observed_successful_rps':max(x['successful_rps'] for x in stages)}
+    elapsed=time.perf_counter()-began
+   ordered=sorted(latencies);n=len(statuses);errors=sum(v!='200' for v in statuses)
+   result={'label':label,'model':'closed-loop' if closed else 'open-loop with explicit in-flight cap and recorded drops','offered_rps':rate if not closed else None,'planned_duration_seconds':duration,'duration_including_drain_seconds':round(elapsed,3),'concurrency_limit':concurrency,'peak_client_inflight':peak,'scheduled':scheduled,'client_dropped':dropped,'unoffered_due_to_abort':0 if closed else max(0,round(rate*duration)-scheduled),'requests_completed':n,'statuses':dict(collections.Counter(statuses)),'successful_rps_including_drain':round(statuses.count('200')/elapsed,2),'successful_rps_within_planned_window':round(sum(status=='200' and end<=duration for status,end in zip(statuses,ends))/duration,2),'error_percent':round(100*errors/max(n,1),3),'p50_ms':round(ordered[n//2]*1000,2) if n else None,'p95_ms':round(ordered[max(0,int(n*.95)-1)]*1000,2) if n else None,'max_ms':round(max(ordered)*1000,2) if n else None,'scheduler_max_lag_ms':round(scheduler_lag*1000,2),'safety_stop':abort.is_set(),'health_checks':health_checks,'api_container_before':before,'api_container_after':await stats()}
+   print(json.dumps(result),flush=True);return result
+  stages=[]
+  for concurrency in [100,250,500,1000]:
+   result=await trial('post-optimization-'+str(concurrency),0,15,concurrency,True);stages.append(result)
+   Path('load-verification').mkdir(exist_ok=True);Path('load-verification/progress.json').write_text(json.dumps(stages,indent=2))
+   if result['safety_stop'] or result['error_percent']>1 or (result['p95_ms'] or 0)>3000:break
+   await asyncio.sleep(5)
+  # An explicit bounded attempt at the requested rate, without unbounded queues.
+  await asyncio.sleep(10)
+  stages.append(await trial('target-10000-rps',10000,5,2000))
+  await asyncio.sleep(15)
+  healthy=[r['successful_rps_including_drain'] for r in stages if r['label'].startswith('post-optimization') and not r['safety_stop'] and r['error_percent']==0 and (r['p95_ms'] or 99999)<1000]
+  sustainable_rate=max(10,int(max(healthy,default=100)*.6))
+  stages.append(await trial('sustained-with-headroom',sustainable_rate,120,500))
+  target=next(r for r in stages if r['label']=='target-10000-rps')
+  verified=(target['scheduled']==50000 and target['client_dropped']==0 and target['requests_completed']==50000 and target['statuses'].get('200')==50000 and not target['safety_stop'] and target['successful_rps_within_planned_window']>=9900)
+  return {'target_requested_rps':10000,'target_verified':verified,'version_under_test':'2.2.1+14','method':'external HTTPS authenticated catalog, one GitHub runner and one temporary member; closed-loop comparison, bounded open-loop target attempt, 120-second sustained test','endpoint':'GET /api/catalog?limit=30','read_only':True,'cpu_cores':info['cpu_cores'],'stages':stages}
  report=asyncio.run(measure())
  try:
   health=httpx.get(BASE+'/api/health',timeout=15);report['health_after']=health.status_code
