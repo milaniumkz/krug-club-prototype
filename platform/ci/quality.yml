@@ -1,6 +1,7 @@
 # Copy to .github/workflows/qazaqmetal-platform.yml when connecting CI.
 name: QazaqMetal quality
 on:
+  workflow_dispatch:
   push:
     paths: ['platform/server/**', 'platform/client/**', 'platform/deploy/**', 'platform/scripts/**', 'platform/compose.yaml', '.github/workflows/qazaqmetal-platform.yml']
   pull_request:
