@@ -1,0 +1,24 @@
+name: Deliver server-configured Android APK
+on:
+  push:
+    branches: [qazaqmetal-server-apk-20261118]
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Verify and publish APK for HTTPS server
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qazaqmetal-purple-platform-2026-11-18 --pattern 'server-apk.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 12
+          cat parts/server-apk.part.??? > server-apk.zip
+          echo '952ff1ddd820cd910d0c60b21878dc8e5e2fd6588dbc4380a360f146071afa79  server-apk.zip' | sha256sum --check
+          unzip -q server-apk.zip
+          sha256sum --check server-apk.sha256
+          gh release upload qazaqmetal-purple-platform-2026-11-18 QazaqMetal_Android_server.apk server-apk.sha256 --clobber
