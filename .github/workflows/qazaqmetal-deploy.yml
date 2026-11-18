@@ -1,0 +1,30 @@
+name: Deploy QazaqMetal to authorized VPS
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: qazaqmetal-production-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned SSH transport
+        run: pip install paramiko==4.0.0
+      - name: Verify SSH identity, deploy services and seed requested demo data
+        env:
+          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+        run: python .github/scripts/deploy.py
+      - name: Save public demo QR data and deployment checks
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qazaqmetal-deployment-output
+          path: deployment-output/
+          if-no-files-found: ignore

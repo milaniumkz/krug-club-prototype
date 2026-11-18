@@ -1,0 +1,21 @@
+name: Diagnose authorized SSH login
+on:
+  push:
+    branches: [qazaqmetal-platform-20261118]
+    paths: ['.github/workflows/qazaqmetal-ssh-diagnose.yml', '.github/scripts/ssh_diagnose.py']
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install paramiko==4.0.0
+      - name: Verify identity and diagnose authentication without changing host configuration
+        env:
+          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+        run: python .github/scripts/ssh_diagnose.py
