@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: qazaqmetal_dev
+      POSTGRES_USER: qazaqmetal
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Create private local .env}
+    ports: ['127.0.0.1:5432:5432']
+    volumes: [local_db:/var/lib/postgresql/data]
+volumes:
+  local_db:
