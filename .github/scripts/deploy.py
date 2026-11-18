@@ -59,7 +59,7 @@ try:
     result=command('cd /opt/qazaqmetal/current && docker compose exec -T api python /tmp/seed_demo.py',json.dumps(seed).encode())
     state=json.loads(result.strip().splitlines()[-1]);Path('deployment-output').mkdir(exist_ok=True)
     Path('deployment-output/demo-partners.json').write_text(json.dumps(state,ensure_ascii=False,indent=2))
-    command('cd /opt/qazaqmetal/current && docker compose exec -T api rm -rf /tmp/seed_demo.py /tmp/qazaqmetal-demo-assets')
+    command('cd /opt/qazaqmetal/current && docker compose exec -T -u 0 api rm -rf /tmp/seed_demo.py /tmp/qazaqmetal-demo-assets')
     # Wait for public ACME certificate; no TLS bypass.
     for attempt in range(60):
         try:
