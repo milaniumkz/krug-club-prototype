@@ -2,6 +2,8 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from app.catalog_db import get_catalog_db
 
 from app.db import Base, Organization, Partner, User, get_db, make_engine
 from app.main import app
@@ -37,8 +39,20 @@ def world(tmp_path, monkeypatch):
         with factory() as db:
             yield db
     app.dependency_overrides[get_db] = dependency
+    async_engine = None
+    if url.startswith('postgresql'):
+        async_engine = create_async_engine(url, pool_pre_ping=True)
+        async_factory = async_sessionmaker(async_engine, expire_on_commit=False)
+        async def catalog_dependency():
+            async with async_factory() as session:
+                yield session
+        app.dependency_overrides[get_catalog_db] = catalog_dependency
+    else:
+        app.dependency_overrides[get_catalog_db] = dependency
     with TestClient(app, headers={'X-QM-Client': 'web'}) as client:
         yield client, factory, ids
+        if async_engine is not None:
+            client.portal.call(async_engine.dispose)
     app.dependency_overrides.clear()
     engine.dispose()
 

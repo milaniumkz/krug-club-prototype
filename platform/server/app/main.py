@@ -24,8 +24,10 @@ from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from . import schemas as S
-from . import session_events, catalog_cache
+from . import session_events, catalog_cache, catalog_db
 from .middleware import Protection
+from .catalog_db import get_catalog_db
+from sqlalchemy.ext.asyncio import AsyncSession
 from .notifications import offer_approved
 from .db import PushDevice, Notification
 from starlette.concurrency import run_in_threadpool
@@ -40,6 +42,7 @@ app = FastAPI(title='QAZAQMETAL KÁSIPODAǴY API', version='1.0.0',
               openapi_url='/api/openapi.json')
 app.add_event_handler('startup', session_events.start)
 app.add_event_handler('shutdown', session_events.stop)
+app.add_event_handler('shutdown', catalog_db.stop)
 if PRODUCTION and (not os.getenv('DATABASE_URL', '').startswith('postgresql') or not os.getenv('PUBLIC_ORIGIN', '').startswith('https://')):
     raise RuntimeError('Production requires PostgreSQL DATABASE_URL and HTTPS PUBLIC_ORIGIN')
 UPLOADS = Path(os.getenv('UPLOAD_DIR', './uploads')).resolve()
@@ -294,8 +297,7 @@ def category_labels(user=Depends(member), db=Depends(get_db)):
     return {r.published.get('category', ''): r.published['category_kk'] for r in public_venues(db, user) if r.published.get('category_kk')}
 
 
-@app.get('/api/catalog')
-def catalog(q: str = '', category: str = '', favorites_only: bool = False, latitude: float | None = Query(None, ge=-90, le=90),
+def catalog_page(q: str = '', category: str = '', favorites_only: bool = False, latitude: float | None = Query(None, ge=-90, le=90),
             longitude: float | None = Query(None, ge=-180, le=180),
             west: float | None = Query(None, ge=-180, le=180),
             south: float | None = Query(None, ge=-90, le=90),
@@ -349,6 +351,30 @@ def catalog(q: str = '', category: str = '', favorites_only: bool = False, latit
     if cache_key is not None:
         catalog_cache.put(cache_key, response.body, generation)
     return response
+
+
+@app.get('/api/catalog')
+async def catalog(request: Request, q: str = '', category: str = '', favorites_only: bool = False,
+                  latitude: float | None = Query(None, ge=-90, le=90),
+                  longitude: float | None = Query(None, ge=-180, le=180),
+                  west: float | None = Query(None, ge=-180, le=180),
+                  south: float | None = Query(None, ge=-90, le=90),
+                  east: float | None = Query(None, ge=-180, le=180),
+                  north: float | None = Query(None, ge=-90, le=90),
+                  limit: int = Query(50, ge=1, le=500), offset: int = Query(0, ge=0),
+                  db=Depends(get_catalog_db)):
+    async def run(function):
+        if isinstance(db, AsyncSession):
+            return await db.run_sync(function)
+        return await run_in_threadpool(function, db)
+    # Reuse the exact same live authorization checks as every other endpoint.
+    user = await run(lambda session: current_user(request, session))
+    await ready_user(user)
+    await member(user)
+    return await run(lambda session: catalog_page(q=q, category=category,
+        favorites_only=favorites_only, latitude=latitude, longitude=longitude,
+        west=west, south=south, east=east, north=north, limit=limit, offset=offset,
+        user=user, db=session))
 
 
 @app.get('/api/catalog/{resource_id}')
