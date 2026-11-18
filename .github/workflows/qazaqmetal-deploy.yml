@@ -1,9 +1,6 @@
 name: Deploy QazaqMetal to authorized VPS
 on:
   workflow_dispatch:
-  push:
-    branches: [qazaqmetal-platform-20261118]
-    paths: ['.github/workflows/qazaqmetal-deploy.yml', '.github/scripts/**', '.github/demo-assets/**']
 permissions:
   contents: read
 concurrency:

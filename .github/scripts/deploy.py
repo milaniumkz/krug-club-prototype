@@ -40,7 +40,7 @@ try:
         sftp.put('.github/scripts/'+name,'/opt/qazaqmetal/incoming/'+name)
     command('python3 /opt/qazaqmetal/incoming/provision.py')
     command('install -d -m 755 /opt/qazaqmetal/incoming/demo-assets')
-    for file in Path('.github/demo-assets').glob('*.png'):sftp.put(str(file),'/opt/qazaqmetal/incoming/demo-assets/'+file.name)
+    for file in Path('.github/demo-assets').iterdir():sftp.put(str(file),'/opt/qazaqmetal/incoming/demo-assets/'+file.name)
     command('cd /opt/qazaqmetal/current && docker compose cp /opt/qazaqmetal/incoming/seed_demo.py api:/tmp/seed_demo.py && docker compose cp /opt/qazaqmetal/incoming/demo-assets api:/tmp/qazaqmetal-demo-assets')
     # Admin secret remains only in a root-readable host file, never in public artifacts/logs.
     credentials='/opt/qazaqmetal/shared/admin-initial.json'

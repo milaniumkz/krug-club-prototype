@@ -1,0 +1,20 @@
+{
+  "partners": [
+    {
+      "key": "restaurant",
+      "name": "ДЕМО · Ресторан «Сад»",
+      "venue_id": "f95f06c1-8b65-4717-8fd3-5b2e0a536fdd",
+      "offer_id": "89d42115-ab71-4e0c-a2a0-36b3c9e283dd",
+      "percent": 15,
+      "code": "QAZAQMETAL:1:f95f06c1-8b65-4717-8fd3-5b2e0a536fdd:vQWDhY3m-w9Hb_zWNZMLaV8ekKUvDsO-"
+    },
+    {
+      "key": "flowers",
+      "name": "ДЕМО · Цветочная мастерская «Лепесток»",
+      "venue_id": "5e8d0f04-9ccf-4ca7-a718-7f1cab0484b8",
+      "offer_id": "5431fa30-e810-4313-90c6-05f4e36a2138",
+      "percent": 10,
+      "code": "QAZAQMETAL:1:5e8d0f04-9ccf-4ca7-a718-7f1cab0484b8:Dt83iaWaNxJ-AVVXRF3JG9QTMGe8sMLV"
+    }
+  ]
+}
