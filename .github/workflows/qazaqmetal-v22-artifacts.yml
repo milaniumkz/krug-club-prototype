@@ -17,7 +17,7 @@ jobs:
           gh release download qazaqmetal-testing-2026-11-18 --pattern 'v22.part.*' --dir parts
           test "$(find parts -type f | wc -l)" -eq 16
           cat parts/v22.part.??? > delivery.zip
-          echo '29c758d0f19df7c0d7f07e8738264ae1d0b0fb23887e2eda029397e242299de9  delivery.zip' | sha256sum --check
+          echo 'ef1732b6ec502686c8178363a8a0a8507604e816cae3911684e072c85d78766f  delivery.zip' | sha256sum --check
           unzip -q delivery.zip
           sha256sum --check checksums.sha256
           gh release upload qazaqmetal-testing-2026-11-18 QazaqMetal_full_project.zip QazaqMetal_Android_server.apk QazaqMetal_demo_assets.zip checksums.sha256 --clobber
