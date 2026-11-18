@@ -1,0 +1,4 @@
+storePassword=SET_ON_BUILD_MACHINE
+keyPassword=SET_ON_BUILD_MACHINE
+keyAlias=qazaqmetal
+storeFile=/absolute/private/path/qazaqmetal-upload.jks

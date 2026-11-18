@@ -1,0 +1,15 @@
+services:
+  push:
+    profiles: [push]
+    build:
+      context: .
+      dockerfile: server/Dockerfile.push
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://qazaqmetal:${DB_PASSWORD:?}@db:5432/qazaqmetal
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase_admin.json
+    volumes:
+      - ${FIREBASE_ADMIN_FILE:?Set private Firebase service account path}:/run/secrets/firebase_admin.json:ro
+    depends_on:
+      api:
+        condition: service_healthy

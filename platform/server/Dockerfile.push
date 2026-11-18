@@ -1,0 +1,5 @@
+FROM qazaqmetal-api:latest
+USER root
+RUN pip install --no-cache-dir -r /app/requirements-push.txt
+USER appuser
+CMD ["python", "-m", "app.push_worker"]
