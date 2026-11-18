@@ -123,6 +123,20 @@ try:
   page.get_by_role('tab',name='Басты бет',exact=True).wait_for();page.screenshot(path=str(out/'profile-kk.png'))
   page.get_by_role('button',name='РУС',exact=True).click();page.wait_for_timeout(600)
   checks.append({'case':'Russian/Kazakh profile switch and translated navigation','result':'PASS'})
+  # The real Logout UI must end the PIN lifecycle; credential login must create it again.
+  for _ in range(8):
+   if page.get_by_text('Выйти',exact=True).count():break
+   page.mouse.move(200,500);page.mouse.wheel(0,450);page.wait_for_timeout(250)
+  page.get_by_text('Выйти',exact=True).scroll_into_view_if_needed()
+  page.get_by_text('Выйти',exact=True).click();page.wait_for_timeout(300)
+  page.get_by_role('button',name='Продолжить',exact=True).click();page.wait_for_timeout(700)
+  fill('Табельный номер',member_identifier);fill('Пароль',personal)
+  page.get_by_role('button',name='Войти',exact=True).click();page.wait_for_timeout(1200)
+  page.get_by_text('Создайте PIN-код',exact=True).wait_for()
+  enter_pin('826419');enter_pin('826419')
+  page.get_by_role('tab',name='Главная',exact=True).wait_for()
+  checks.append({'case':'logout button clears PIN; credential re-login creates a different new PIN','result':'PASS'})
+
   for width,height in [(320,640),(430,932),(768,1024)]:
    page.set_viewport_size({'width':width,'height':height});page.wait_for_timeout(500)
    assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth');checks.append({'viewport':[width,height],'result':'PASS'})
