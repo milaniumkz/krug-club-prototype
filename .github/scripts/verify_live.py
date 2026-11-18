@@ -92,7 +92,7 @@ try:
   ctx=browser.new_context(viewport={'width':390,'height':844},permissions=['geolocation'],geolocation={'latitude':52.287,'longitude':76.967})
   page=ctx.new_page();page.set_default_timeout(15000)
   def enable():
-   page.wait_for_function("document.querySelector('flt-semantics-placeholder') || document.querySelector('flt-semantics')",timeout=30000)
+   page.locator('flt-semantics-placeholder, flt-semantics').first.wait_for(state='attached',timeout=30000)
    if page.locator('flt-semantics-placeholder').count():page.locator('flt-semantics-placeholder').evaluate('(e)=>e.click()')
    page.wait_for_timeout(300)
   def fill(label,value,prefix=False):
