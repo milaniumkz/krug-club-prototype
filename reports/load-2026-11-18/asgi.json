@@ -1,0 +1,495 @@
+{
+  "target_requested_rps": 10000,
+  "target_verified": false,
+  "version_under_test": "2.2.1+14",
+  "method": "external HTTPS authenticated catalog, one GitHub runner and one temporary member; closed-loop comparison, bounded open-loop target attempt, 120-second sustained test",
+  "endpoint": "GET /api/catalog?limit=30",
+  "read_only": true,
+  "cpu_cores": 2,
+  "stages": [
+    {
+      "label": "post-optimization-100",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 15.438,
+      "concurrency_limit": 100,
+      "peak_client_inflight": 100,
+      "scheduled": 3488,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 3488,
+      "statuses": {
+        "200": 3488
+      },
+      "successful_rps_including_drain": 225.93,
+      "successful_rps_within_planned_window": 225.87,
+      "error_percent": 0.0,
+      "p50_ms": 453.09,
+      "p95_ms": 780.92,
+      "max_ms": 1501.29,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.587
+        },
+        {
+          "status": 200,
+          "seconds": 0.564
+        },
+        {
+          "status": 200,
+          "seconds": 0.575
+        },
+        {
+          "status": 200,
+          "seconds": 0.569
+        },
+        {
+          "status": 200,
+          "seconds": 0.576
+        },
+        {
+          "status": 200,
+          "seconds": 0.587
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 17738263\nuser_usec 15763081\nsystem_usec 1975182\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "246251520",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          0.78857421875,
+          0.48486328125,
+          0.19970703125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 33341554\nuser_usec 28681644\nsystem_usec 4659909\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "253231104",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          1.80224609375,
+          0.72314453125,
+          0.28271484375
+        ]
+      }
+    },
+    {
+      "label": "post-optimization-250",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 16.068,
+      "concurrency_limit": 250,
+      "peak_client_inflight": 250,
+      "scheduled": 3510,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 3510,
+      "statuses": {
+        "200": 3510
+      },
+      "successful_rps_including_drain": 218.44,
+      "successful_rps_within_planned_window": 217.33,
+      "error_percent": 0.0,
+      "p50_ms": 1101.72,
+      "p95_ms": 1428.52,
+      "max_ms": 2195.85,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 1.186
+        },
+        {
+          "status": 200,
+          "seconds": 0.55
+        },
+        {
+          "status": 200,
+          "seconds": 0.586
+        },
+        {
+          "status": 200,
+          "seconds": 0.62
+        },
+        {
+          "status": 200,
+          "seconds": 0.602
+        },
+        {
+          "status": 200,
+          "seconds": 0.535
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 33749242\nuser_usec 29034077\nsystem_usec 4715165\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "253247488",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          1.65771484375,
+          0.7109375,
+          0.28076171875
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 50215727\nuser_usec 42875787\nsystem_usec 7339939\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "256483328",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.22998046875,
+          1.10205078125,
+          0.416015625
+        ]
+      }
+    },
+    {
+      "label": "post-optimization-500",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 5.043,
+      "concurrency_limit": 500,
+      "peak_client_inflight": 500,
+      "scheduled": 889,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 889,
+      "statuses": {
+        "200": 889
+      },
+      "successful_rps_including_drain": 176.27,
+      "successful_rps_within_planned_window": 59.27,
+      "error_percent": 0.0,
+      "p50_ms": 2137.28,
+      "p95_ms": 3707.6,
+      "max_ms": 4388.44,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": true,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 1.858
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 50383650\nuser_usec 43012259\nsystem_usec 7371390\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "256487424",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          2.73291015625,
+          1.0654296875,
+          0.4111328125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 55049162\nuser_usec 46886670\nsystem_usec 8162491\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "259313664",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          4.03564453125,
+          1.36328125,
+          0.51123046875
+        ]
+      }
+    },
+    {
+      "label": "target-10000-rps",
+      "model": "open-loop with explicit in-flight cap and recorded drops",
+      "offered_rps": 10000,
+      "planned_duration_seconds": 5,
+      "duration_including_drain_seconds": 12.785,
+      "concurrency_limit": 2000,
+      "peak_client_inflight": 2000,
+      "scheduled": 3300,
+      "client_dropped": 1201,
+      "unoffered_due_to_abort": 46700,
+      "requests_completed": 2099,
+      "statuses": {
+        "200": 2099
+      },
+      "successful_rps_including_drain": 164.17,
+      "successful_rps_within_planned_window": 13.8,
+      "error_percent": 0.0,
+      "p50_ms": 7569.95,
+      "p95_ms": 11816.0,
+      "max_ms": 12467.98,
+      "scheduler_max_lag_ms": 5263.88,
+      "safety_stop": true,
+      "health_checks": [
+        {
+          "status": "timeout"
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 55271957\nuser_usec 47078188\nsystem_usec 8193768\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "259366912",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.4150390625,
+          1.31787109375,
+          0.50537109375
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 65985328\nuser_usec 56026008\nsystem_usec 9959319\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "270979072",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          4.41064453125,
+          1.63134765625,
+          0.62060546875
+        ]
+      }
+    },
+    {
+      "label": "sustained-with-headroom",
+      "model": "open-loop with explicit in-flight cap and recorded drops",
+      "offered_rps": 135,
+      "planned_duration_seconds": 120,
+      "duration_including_drain_seconds": 120.171,
+      "concurrency_limit": 500,
+      "peak_client_inflight": 86,
+      "scheduled": 16200,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 16200,
+      "statuses": {
+        "200": 16200
+      },
+      "successful_rps_including_drain": 134.81,
+      "successful_rps_within_planned_window": 134.8,
+      "error_percent": 0.0,
+      "p50_ms": 186.75,
+      "p95_ms": 199.69,
+      "max_ms": 1589.21,
+      "scheduler_max_lag_ms": 6.1,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.555
+        },
+        {
+          "status": 200,
+          "seconds": 0.54
+        },
+        {
+          "status": 200,
+          "seconds": 0.526
+        },
+        {
+          "status": 200,
+          "seconds": 0.536
+        },
+        {
+          "status": 200,
+          "seconds": 0.554
+        },
+        {
+          "status": 200,
+          "seconds": 0.548
+        },
+        {
+          "status": 200,
+          "seconds": 0.526
+        },
+        {
+          "status": 200,
+          "seconds": 0.581
+        },
+        {
+          "status": 200,
+          "seconds": 0.551
+        },
+        {
+          "status": 200,
+          "seconds": 0.565
+        },
+        {
+          "status": 200,
+          "seconds": 0.548
+        },
+        {
+          "status": 200,
+          "seconds": 0.563
+        },
+        {
+          "status": 200,
+          "seconds": 0.529
+        },
+        {
+          "status": 200,
+          "seconds": 0.554
+        },
+        {
+          "status": 200,
+          "seconds": 0.538
+        },
+        {
+          "status": 200,
+          "seconds": 0.55
+        },
+        {
+          "status": 200,
+          "seconds": 0.515
+        },
+        {
+          "status": 200,
+          "seconds": 0.567
+        },
+        {
+          "status": 200,
+          "seconds": 0.554
+        },
+        {
+          "status": 200,
+          "seconds": 0.56
+        },
+        {
+          "status": 200,
+          "seconds": 0.586
+        },
+        {
+          "status": 200,
+          "seconds": 0.541
+        },
+        {
+          "status": 200,
+          "seconds": 0.536
+        },
+        {
+          "status": 200,
+          "seconds": 0.568
+        },
+        {
+          "status": 200,
+          "seconds": 0.535
+        },
+        {
+          "status": 200,
+          "seconds": 0.545
+        },
+        {
+          "status": 200,
+          "seconds": 0.555
+        },
+        {
+          "status": 200,
+          "seconds": 0.558
+        },
+        {
+          "status": 200,
+          "seconds": 0.505
+        },
+        {
+          "status": 200,
+          "seconds": 0.541
+        },
+        {
+          "status": 200,
+          "seconds": 0.552
+        },
+        {
+          "status": 200,
+          "seconds": 0.534
+        },
+        {
+          "status": 200,
+          "seconds": 0.551
+        },
+        {
+          "status": 200,
+          "seconds": 0.564
+        },
+        {
+          "status": 200,
+          "seconds": 0.51
+        },
+        {
+          "status": 200,
+          "seconds": 0.643
+        },
+        {
+          "status": 200,
+          "seconds": 0.545
+        },
+        {
+          "status": 200,
+          "seconds": 0.555
+        },
+        {
+          "status": 200,
+          "seconds": 0.542
+        },
+        {
+          "status": 200,
+          "seconds": 0.503
+        },
+        {
+          "status": 200,
+          "seconds": 0.549
+        },
+        {
+          "status": 200,
+          "seconds": 0.556
+        },
+        {
+          "status": 200,
+          "seconds": 0.538
+        },
+        {
+          "status": 200,
+          "seconds": 0.555
+        },
+        {
+          "status": 200,
+          "seconds": 0.543
+        },
+        {
+          "status": 200,
+          "seconds": 0.529
+        },
+        {
+          "status": 200,
+          "seconds": 0.524
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 66543896\nuser_usec 56499211\nsystem_usec 10044685\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "270811136",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.4326171875,
+          1.55078125,
+          0.6103515625
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 137262772\nuser_usec 118348604\nsystem_usec 18914167\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "memory_current_bytes": "270262272",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          2.0224609375,
+          1.61181640625,
+          0.74951171875
+        ]
+      }
+    }
+  ],
+  "health_after": 200
+}

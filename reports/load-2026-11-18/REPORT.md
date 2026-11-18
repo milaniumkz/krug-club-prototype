@@ -1,3 +1,5 @@
+> Повторные замеры после оптимизаций и итоговая проверка PIN: [актуальный отчёт](CAPACITY_AND_PIN.md).
+
 # Нагрузочное тестирование QazaqMetal — 18 ноября 2026
 
 Проверка опубликованного сервера выполнена через GitHub Actions: https://github.com/milaniumkz/krug-club-prototype/actions/runs/44292264150

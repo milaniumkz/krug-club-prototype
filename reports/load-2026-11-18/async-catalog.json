@@ -1,0 +1,824 @@
+{
+  "target_requested_rps": 10000,
+  "target_verified": false,
+  "version_under_test": "2.2.1+14 with catalog-cache server update",
+  "method": "external HTTPS authenticated catalog, one GitHub runner and one temporary member; closed-loop comparison, bounded open-loop target attempt, 120-second sustained test",
+  "endpoint": "GET /api/catalog?limit=30",
+  "read_only": true,
+  "cpu_cores": 2,
+  "native_generator_stages": [
+    {
+      "label": "native-wrk-100",
+      "model": "native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee",
+      "concurrency_limit": 100,
+      "duration_seconds": 20.021,
+      "requests_completed": 9798,
+      "statuses": {
+        "200": 9798
+      },
+      "socket_errors": 0,
+      "successful_rps": 489.39,
+      "p95_ms": 238.36,
+      "generator_threads": 2,
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 20246735\nuser_usec 17948365\nsystem_usec 2298369\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  112024 6892 46187 3019636 2038 0 4531 20784 0 0",
+        "memory_current_bytes": "286801920",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          0.09765625,
+          0.68798828125,
+          1.07861328125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 41059377\nuser_usec 35361379\nsystem_usec 5697997\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  114551 6892 47063 3020094 2039 0 4763 20828 0 0",
+        "memory_current_bytes": "288886784",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          1.451171875,
+          0.95361328125,
+          1.15771484375
+        ]
+      },
+      "container_samples": [
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "94.41%",
+            "MemUsage": "266.8MiB / 3.823GiB",
+            "MemPerc": "6.81%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "56.44%",
+            "MemUsage": "74.97MiB / 3.823GiB",
+            "MemPerc": "1.91%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "23.62%",
+            "MemUsage": "64.97MiB / 3.823GiB",
+            "MemPerc": "1.66%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "100.20%",
+            "MemUsage": "266.8MiB / 3.823GiB",
+            "MemPerc": "6.81%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "56.48%",
+            "MemUsage": "75.33MiB / 3.823GiB",
+            "MemPerc": "1.92%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "22.11%",
+            "MemUsage": "41.25MiB / 3.823GiB",
+            "MemPerc": "1.05%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "107.49%",
+            "MemUsage": "266.9MiB / 3.823GiB",
+            "MemPerc": "6.82%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "56.73%",
+            "MemUsage": "75.04MiB / 3.823GiB",
+            "MemPerc": "1.92%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "20.47%",
+            "MemUsage": "41.57MiB / 3.823GiB",
+            "MemPerc": "1.06%",
+            "PIDs": "12"
+          }
+        ]
+      ],
+      "raw_generator_output": "Running 20s test @ https://qazaqmetal.109.235.119.144.sslip.io/api/catalog?limit=30\n  2 threads and 100 connections\n  Thread Stats   Avg      Stdev     Max   +/- Stdev\n    Latency   200.16ms   37.02ms   1.39s    94.73%\n    Req/Sec   252.62     47.17   350.00     70.44%\n  Latency Distribution\n     50%  192.46ms\n     75%  203.54ms\n     90%  221.23ms\n     99%  374.40ms\n  9798 requests in 20.02s, 92.24MB read\nRequests/sec:    489.39\nTransfer/sec:      4.61MB\nQM_STATUS 200 9798\nQM_SUMMARY 9798 20020873\nQM_P95_US 238360\n"
+    },
+    {
+      "label": "native-wrk-250",
+      "model": "native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee",
+      "concurrency_limit": 250,
+      "duration_seconds": 20.072,
+      "requests_completed": 10082,
+      "statuses": {
+        "200": 10082
+      },
+      "socket_errors": 0,
+      "successful_rps": 502.3,
+      "p95_ms": 620.61,
+      "generator_threads": 2,
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 41376933\nuser_usec 35623210\nsystem_usec 5753722\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  114588 6892 47079 3021154 2039 0 4763 20835 0 0",
+        "memory_current_bytes": "299773952",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          1.3349609375,
+          0.9375,
+          1.1513671875
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 64341432\nuser_usec 54613829\nsystem_usec 9727603\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  117389 6892 48020 3021275 2039 0 5047 20862 0 0",
+        "memory_current_bytes": "290316288",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.21337890625,
+          1.3828125,
+          1.29345703125
+        ]
+      },
+      "container_samples": [
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "121.29%",
+            "MemUsage": "268.2MiB / 3.823GiB",
+            "MemPerc": "6.85%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "48.94%",
+            "MemUsage": "75.43MiB / 3.823GiB",
+            "MemPerc": "1.93%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "22.04%",
+            "MemUsage": "54.13MiB / 3.823GiB",
+            "MemPerc": "1.38%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "113.17%",
+            "MemUsage": "268.4MiB / 3.823GiB",
+            "MemPerc": "6.86%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "60.75%",
+            "MemUsage": "75.55MiB / 3.823GiB",
+            "MemPerc": "1.93%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "26.49%",
+            "MemUsage": "59.34MiB / 3.823GiB",
+            "MemPerc": "1.52%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "118.96%",
+            "MemUsage": "278.7MiB / 3.823GiB",
+            "MemPerc": "7.12%",
+            "PIDs": "18"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "53.40%",
+            "MemUsage": "76.11MiB / 3.823GiB",
+            "MemPerc": "1.94%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "26.40%",
+            "MemUsage": "61.77MiB / 3.823GiB",
+            "MemPerc": "1.58%",
+            "PIDs": "12"
+          }
+        ]
+      ],
+      "raw_generator_output": "Running 20s test @ https://qazaqmetal.109.235.119.144.sslip.io/api/catalog?limit=30\n  2 threads and 250 connections\n  Thread Stats   Avg      Stdev     Max   +/- Stdev\n    Latency   479.96ms   84.60ms   1.28s    68.44%\n    Req/Sec   258.32     51.59   390.00     69.05%\n  Latency Distribution\n     50%  481.14ms\n     75%  533.77ms\n     90%  585.76ms\n     99%  712.40ms\n  10082 requests in 20.07s, 94.91MB read\nRequests/sec:    502.30\nTransfer/sec:      4.73MB\nQM_STATUS 200 10082\nQM_SUMMARY 10082 20071653\nQM_P95_US 620607\n"
+    },
+    {
+      "label": "native-wrk-500",
+      "model": "native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee",
+      "concurrency_limit": 500,
+      "duration_seconds": 20.074,
+      "requests_completed": 9381,
+      "statuses": {
+        "200": 9381
+      },
+      "socket_errors": 8,
+      "successful_rps": 467.33,
+      "p95_ms": 1258.94,
+      "generator_threads": 2,
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 64505519\nuser_usec 54747996\nsystem_usec 9757523\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  117413 6892 48031 3022346 2039 0 5047 20863 0 0",
+        "memory_current_bytes": "290312192",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          2.9560546875,
+          1.359375,
+          1.2861328125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 87840639\nuser_usec 74132478\nsystem_usec 13708160\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  120238 6892 48942 3022480 2039 0 5334 20938 0 0",
+        "memory_current_bytes": "305483776",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.58447265625,
+          1.63623046875,
+          1.38037109375
+        ]
+      },
+      "container_samples": [
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "109.61%",
+            "MemUsage": "271.1MiB / 3.823GiB",
+            "MemPerc": "6.93%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "58.90%",
+            "MemUsage": "76.49MiB / 3.823GiB",
+            "MemPerc": "1.95%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "33.29%",
+            "MemUsage": "71.55MiB / 3.823GiB",
+            "MemPerc": "1.83%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "108.82%",
+            "MemUsage": "271.5MiB / 3.823GiB",
+            "MemPerc": "6.93%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "60.61%",
+            "MemUsage": "76.21MiB / 3.823GiB",
+            "MemPerc": "1.95%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "26.54%",
+            "MemUsage": "93.35MiB / 3.823GiB",
+            "MemPerc": "2.38%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "117.66%",
+            "MemUsage": "271.5MiB / 3.823GiB",
+            "MemPerc": "6.93%",
+            "PIDs": "17"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "60.16%",
+            "MemUsage": "75.95MiB / 3.823GiB",
+            "MemPerc": "1.94%",
+            "PIDs": "32"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "24.14%",
+            "MemUsage": "94.43MiB / 3.823GiB",
+            "MemPerc": "2.41%",
+            "PIDs": "12"
+          }
+        ]
+      ],
+      "raw_generator_output": "Running 20s test @ https://qazaqmetal.109.235.119.144.sslip.io/api/catalog?limit=30\n  2 threads and 500 connections\n  Thread Stats   Avg      Stdev     Max   +/- Stdev\n    Latency     1.01s   188.80ms   2.00s    85.42%\n    Req/Sec   241.11     59.45   444.00     70.69%\n  Latency Distribution\n     50%    1.01s \n     75%    1.10s \n     90%    1.18s \n     99%    1.62s \n  9381 requests in 20.07s, 88.31MB read\n  Socket errors: connect 0, read 0, write 0, timeout 8\nRequests/sec:    467.33\nTransfer/sec:      4.40MB\nQM_STATUS 200 9381\nQM_SUMMARY 9381 20073600\nQM_P95_US 1258943\n"
+    }
+  ],
+  "stages": [
+    {
+      "label": "post-optimization-100",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 15.213,
+      "concurrency_limit": 100,
+      "peak_client_inflight": 100,
+      "scheduled": 7003,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 7003,
+      "statuses": {
+        "200": 7003
+      },
+      "successful_rps_including_drain": 460.33,
+      "successful_rps_within_planned_window": 460.2,
+      "error_percent": 0.0,
+      "p50_ms": 200.76,
+      "p95_ms": 264.8,
+      "max_ms": 971.27,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.887
+        },
+        {
+          "status": 200,
+          "seconds": 0.565
+        },
+        {
+          "status": 200,
+          "seconds": 0.56
+        },
+        {
+          "status": 200,
+          "seconds": 0.543
+        },
+        {
+          "status": 200,
+          "seconds": 0.54
+        },
+        {
+          "status": 200,
+          "seconds": 0.573
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 88173354\nuser_usec 74413769\nsystem_usec 13759585\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  120275 6892 48955 3022579 2039 0 5335 20938 0 0",
+        "memory_current_bytes": "293089280",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.58447265625,
+          1.63623046875,
+          1.38037109375
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 103768259\nuser_usec 87557490\nsystem_usec 16210769\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  122255 6892 49584 3023015 2039 0 5484 20996 0 0",
+        "memory_current_bytes": "293376000",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.6279296875,
+          1.73681640625,
+          1.4169921875
+        ]
+      }
+    },
+    {
+      "label": "post-optimization-250",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 15.53,
+      "concurrency_limit": 250,
+      "peak_client_inflight": 250,
+      "scheduled": 7202,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 7202,
+      "statuses": {
+        "200": 7202
+      },
+      "successful_rps_including_drain": 463.73,
+      "successful_rps_within_planned_window": 463.47,
+      "error_percent": 0.0,
+      "p50_ms": 544.58,
+      "p95_ms": 877.02,
+      "max_ms": 2008.05,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 1.449
+        },
+        {
+          "status": 200,
+          "seconds": 0.635
+        },
+        {
+          "status": 200,
+          "seconds": 0.569
+        },
+        {
+          "status": 200,
+          "seconds": 0.574
+        },
+        {
+          "status": 200,
+          "seconds": 0.582
+        },
+        {
+          "status": 200,
+          "seconds": 0.573
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 103941978\nuser_usec 87705056\nsystem_usec 16236921\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  122283 6892 49598 3024079 2039 0 5484 21005 0 0",
+        "memory_current_bytes": "293023744",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.33740234375,
+          1.70751953125,
+          1.4091796875
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 120156364\nuser_usec 101273287\nsystem_usec 18883077\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  124370 6892 50241 3024472 2039 0 5654 21034 0 0",
+        "memory_current_bytes": "293122048",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          4.15576171875,
+          1.96728515625,
+          1.49951171875
+        ]
+      }
+    },
+    {
+      "label": "post-optimization-500",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 4.111,
+      "concurrency_limit": 500,
+      "peak_client_inflight": 500,
+      "scheduled": 1115,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 1115,
+      "statuses": {
+        "200": 1115
+      },
+      "successful_rps_including_drain": 271.25,
+      "successful_rps_within_planned_window": 74.33,
+      "error_percent": 0.0,
+      "p50_ms": 1551.19,
+      "p95_ms": 3151.79,
+      "max_ms": 3768.09,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": true,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 2.412
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 120351716\nuser_usec 101436481\nsystem_usec 18915235\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  124395 6892 50255 3025540 2039 0 5655 21071 0 0",
+        "memory_current_bytes": "293134336",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.5166015625,
+          1.90234375,
+          1.48291015625
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 124040559\nuser_usec 104559304\nsystem_usec 19481254\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  124837 6892 50385 3025925 2039 0 5698 21138 0 0",
+        "memory_current_bytes": "293531648",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.5556640625,
+          1.9375,
+          1.49658203125
+        ]
+      }
+    },
+    {
+      "label": "target-10000-rps",
+      "model": "open-loop with explicit in-flight cap and recorded drops",
+      "offered_rps": 10000,
+      "planned_duration_seconds": 5,
+      "duration_including_drain_seconds": 7.492,
+      "concurrency_limit": 2000,
+      "peak_client_inflight": 2000,
+      "scheduled": 3100,
+      "client_dropped": 1008,
+      "unoffered_due_to_abort": 46900,
+      "requests_completed": 2092,
+      "statuses": {
+        "200": 2092
+      },
+      "successful_rps_including_drain": 279.22,
+      "successful_rps_within_planned_window": 18.4,
+      "error_percent": 0.0,
+      "p50_ms": 5581.42,
+      "p95_ms": 6923.35,
+      "max_ms": 7218.49,
+      "scheduler_max_lag_ms": 5351.16,
+      "safety_stop": true,
+      "health_checks": [
+        {
+          "status": "timeout"
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 124256734\nuser_usec 104745495\nsystem_usec 19511238\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  124870 6892 50401 3027980 2039 0 5698 21154 0 0",
+        "memory_current_bytes": "293249024",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.00830078125,
+          1.87353515625,
+          1.47998046875
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 129608952\nuser_usec 109119022\nsystem_usec 20489930\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  125611 6892 50636 3028630 2039 0 5789 21190 0 0",
+        "memory_current_bytes": "293212160",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          2.54541015625,
+          1.8115234375,
+          1.46337890625
+        ]
+      }
+    },
+    {
+      "label": "sustained-with-headroom",
+      "model": "open-loop with explicit in-flight cap and recorded drops",
+      "offered_rps": 278,
+      "planned_duration_seconds": 120,
+      "duration_including_drain_seconds": 104.247,
+      "concurrency_limit": 500,
+      "peak_client_inflight": 500,
+      "scheduled": 28728,
+      "client_dropped": 231,
+      "unoffered_due_to_abort": 4632,
+      "requests_completed": 28497,
+      "statuses": {
+        "200": 28497
+      },
+      "successful_rps_including_drain": 273.36,
+      "successful_rps_within_planned_window": 237.47,
+      "error_percent": 0.0,
+      "p50_ms": 184.81,
+      "p95_ms": 213.02,
+      "max_ms": 4093.45,
+      "scheduler_max_lag_ms": 264.68,
+      "safety_stop": true,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.555
+        },
+        {
+          "status": 200,
+          "seconds": 0.54
+        },
+        {
+          "status": 200,
+          "seconds": 0.59
+        },
+        {
+          "status": 200,
+          "seconds": 0.548
+        },
+        {
+          "status": 200,
+          "seconds": 0.509
+        },
+        {
+          "status": 200,
+          "seconds": 0.569
+        },
+        {
+          "status": 200,
+          "seconds": 0.535
+        },
+        {
+          "status": 200,
+          "seconds": 0.685
+        },
+        {
+          "status": 200,
+          "seconds": 0.667
+        },
+        {
+          "status": 200,
+          "seconds": 0.577
+        },
+        {
+          "status": 200,
+          "seconds": 0.525
+        },
+        {
+          "status": 200,
+          "seconds": 0.56
+        },
+        {
+          "status": 200,
+          "seconds": 0.568
+        },
+        {
+          "status": 200,
+          "seconds": 0.539
+        },
+        {
+          "status": 200,
+          "seconds": 0.523
+        },
+        {
+          "status": 200,
+          "seconds": 0.538
+        },
+        {
+          "status": 200,
+          "seconds": 0.572
+        },
+        {
+          "status": 200,
+          "seconds": 0.518
+        },
+        {
+          "status": 200,
+          "seconds": 0.53
+        },
+        {
+          "status": 200,
+          "seconds": 0.564
+        },
+        {
+          "status": 200,
+          "seconds": 0.558
+        },
+        {
+          "status": 200,
+          "seconds": 0.55
+        },
+        {
+          "status": 200,
+          "seconds": 0.533
+        },
+        {
+          "status": 200,
+          "seconds": 0.572
+        },
+        {
+          "status": 200,
+          "seconds": 0.551
+        },
+        {
+          "status": 200,
+          "seconds": 0.561
+        },
+        {
+          "status": 200,
+          "seconds": 0.528
+        },
+        {
+          "status": 200,
+          "seconds": 0.517
+        },
+        {
+          "status": 200,
+          "seconds": 0.517
+        },
+        {
+          "status": 200,
+          "seconds": 0.522
+        },
+        {
+          "status": 200,
+          "seconds": 0.532
+        },
+        {
+          "status": 200,
+          "seconds": 0.537
+        },
+        {
+          "status": 200,
+          "seconds": 0.547
+        },
+        {
+          "status": 200,
+          "seconds": 0.561
+        },
+        {
+          "status": 200,
+          "seconds": 0.551
+        },
+        {
+          "status": 200,
+          "seconds": 0.555
+        },
+        {
+          "status": 200,
+          "seconds": 0.571
+        },
+        {
+          "status": 200,
+          "seconds": 0.533
+        },
+        {
+          "status": 200,
+          "seconds": 0.555
+        },
+        {
+          "status": "timeout"
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 130089371\nuser_usec 109531819\nsystem_usec 20557552\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  125670 6892 50657 3031647 2039 0 5790 21202 0 0",
+        "memory_current_bytes": "293249024",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          1.98095703125,
+          1.72216796875,
+          1.43896484375
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 200253159\nuser_usec 169193742\nsystem_usec 31059416\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  134104 6892 53232 3039762 2040 0 6509 22068 0 0",
+        "memory_current_bytes": "293113856",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          2.84912109375,
+          2.16650390625,
+          1.63623046875
+        ]
+      }
+    }
+  ],
+  "health_after": 200
+}

@@ -1,0 +1,984 @@
+{
+  "target_requested_rps": 10000,
+  "target_verified": false,
+  "version_under_test": "2.2.1+14 with catalog-cache server update",
+  "method": "external HTTPS authenticated catalog, one GitHub runner and one temporary member; closed-loop comparison, bounded open-loop target attempt, 120-second sustained test",
+  "endpoint": "GET /api/catalog?limit=30",
+  "read_only": true,
+  "cpu_cores": 2,
+  "native_generator_stages": [
+    {
+      "label": "native-wrk-100",
+      "model": "native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee",
+      "concurrency_limit": 100,
+      "duration_seconds": 20.018,
+      "requests_completed": 6853,
+      "statuses": {
+        "200": 6853
+      },
+      "socket_errors": 0,
+      "successful_rps": 342.35,
+      "p95_ms": 380.9,
+      "generator_threads": 2,
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 19165705\nuser_usec 16938171\nsystem_usec 2227533\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  86467 6892 34716 2904910 1805 0 2702 18916 0 0",
+        "memory_current_bytes": "245178368",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          0.28857421875,
+          0.275390625,
+          0.380859375
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 38459353\nuser_usec 32849213\nsystem_usec 5610140\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  88728 6892 35976 2905315 1805 0 2882 18962 0 0",
+        "memory_current_bytes": "251052032",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          4.10546875,
+          1.13232421875,
+          0.6591796875
+        ]
+      },
+      "container_samples": [
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "99.21%",
+            "MemUsage": "233MiB / 3.823GiB",
+            "MemPerc": "5.95%",
+            "PIDs": "41"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "74.43%",
+            "MemUsage": "60.17MiB / 3.823GiB",
+            "MemPerc": "1.54%",
+            "PIDs": "25"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "18.84%",
+            "MemUsage": "60.21MiB / 3.823GiB",
+            "MemPerc": "1.54%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "98.91%",
+            "MemUsage": "230.1MiB / 3.823GiB",
+            "MemPerc": "5.88%",
+            "PIDs": "36"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "70.93%",
+            "MemUsage": "49.59MiB / 3.823GiB",
+            "MemPerc": "1.27%",
+            "PIDs": "20"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "17.35%",
+            "MemUsage": "40.31MiB / 3.823GiB",
+            "MemPerc": "1.03%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "98.52%",
+            "MemUsage": "230.4MiB / 3.823GiB",
+            "MemPerc": "5.89%",
+            "PIDs": "35"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "73.64%",
+            "MemUsage": "66.25MiB / 3.823GiB",
+            "MemPerc": "1.69%",
+            "PIDs": "28"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "16.93%",
+            "MemUsage": "42.64MiB / 3.823GiB",
+            "MemPerc": "1.09%",
+            "PIDs": "12"
+          }
+        ]
+      ],
+      "raw_generator_output": "Running 20s test @ https://qazaqmetal.109.235.119.144.sslip.io/api/catalog?limit=30\n  2 threads and 100 connections\n  Thread Stats   Avg      Stdev     Max   +/- Stdev\n    Latency   283.68ms   55.02ms   1.01s    72.80%\n    Req/Sec   176.66     47.61   333.00     73.26%\n  Latency Distribution\n     50%  277.36ms\n     75%  310.83ms\n     90%  348.90ms\n     99%  472.20ms\n  6853 requests in 20.02s, 64.51MB read\nRequests/sec:    342.35\nTransfer/sec:      3.22MB\nQM_STATUS 200 6853\nQM_SUMMARY 6853 20017644\nQM_P95_US 380903\n"
+    },
+    {
+      "label": "native-wrk-250",
+      "model": "native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee",
+      "concurrency_limit": 250,
+      "duration_seconds": 20.034,
+      "requests_completed": 6766,
+      "statuses": {
+        "200": 6766
+      },
+      "socket_errors": 0,
+      "successful_rps": 337.73,
+      "p95_ms": 860.55,
+      "generator_threads": 2,
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 38645472\nuser_usec 32998085\nsystem_usec 5647386\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  88757 6892 35991 2906389 1805 0 2883 18965 0 0",
+        "memory_current_bytes": "250941440",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          3.7763671875,
+          1.11328125,
+          0.6552734375
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 58410573\nuser_usec 49099523\nsystem_usec 9311050\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  91086 6892 37290 2906733 1805 0 3069 18996 0 0",
+        "memory_current_bytes": "253120512",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          6.22900390625,
+          1.8505859375,
+          0.908203125
+        ]
+      },
+      "container_samples": [
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "101.77%",
+            "MemUsage": "232.5MiB / 3.823GiB",
+            "MemPerc": "5.94%",
+            "PIDs": "36"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "72.61%",
+            "MemUsage": "59.91MiB / 3.823GiB",
+            "MemPerc": "1.53%",
+            "PIDs": "25"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "21.25%",
+            "MemUsage": "50.23MiB / 3.823GiB",
+            "MemPerc": "1.28%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "101.00%",
+            "MemUsage": "232.7MiB / 3.823GiB",
+            "MemPerc": "5.94%",
+            "PIDs": "35"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "71.18%",
+            "MemUsage": "60.37MiB / 3.823GiB",
+            "MemPerc": "1.54%",
+            "PIDs": "25"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "13.67%",
+            "MemUsage": "61.77MiB / 3.823GiB",
+            "MemPerc": "1.58%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "98.38%",
+            "MemUsage": "233MiB / 3.823GiB",
+            "MemPerc": "5.95%",
+            "PIDs": "36"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "82.26%",
+            "MemUsage": "61.93MiB / 3.823GiB",
+            "MemPerc": "1.58%",
+            "PIDs": "27"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "16.16%",
+            "MemUsage": "62.94MiB / 3.823GiB",
+            "MemPerc": "1.61%",
+            "PIDs": "12"
+          }
+        ]
+      ],
+      "raw_generator_output": "Running 20s test @ https://qazaqmetal.109.235.119.144.sslip.io/api/catalog?limit=30\n  2 threads and 250 connections\n  Thread Stats   Avg      Stdev     Max   +/- Stdev\n    Latency   705.49ms   97.86ms   1.07s    72.73%\n    Req/Sec   174.34     58.21   363.00     72.24%\n  Latency Distribution\n     50%  702.78ms\n     75%  766.03ms\n     90%  826.49ms\n     99%  939.03ms\n  6766 requests in 20.03s, 63.69MB read\nRequests/sec:    337.73\nTransfer/sec:      3.18MB\nQM_STATUS 200 6766\nQM_SUMMARY 6766 20033828\nQM_P95_US 860550\n"
+    },
+    {
+      "label": "native-wrk-500",
+      "model": "native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee",
+      "concurrency_limit": 500,
+      "duration_seconds": 20.06,
+      "requests_completed": 6597,
+      "statuses": {
+        "200": 6597
+      },
+      "socket_errors": 0,
+      "successful_rps": 328.87,
+      "p95_ms": 1743.25,
+      "generator_threads": 2,
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 58870643\nuser_usec 49501082\nsystem_usec 9369561\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  91137 6892 37305 2907782 1805 0 3070 19001 0 0",
+        "memory_current_bytes": "253165568",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          5.72998046875,
+          1.81982421875,
+          0.9033203125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 79097996\nuser_usec 65855360\nsystem_usec 13242636\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  93479 6892 38626 2908110 1805 0 3270 19052 0 0",
+        "memory_current_bytes": "256757760",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          8.40625,
+          2.6767578125,
+          1.205078125
+        ]
+      },
+      "container_samples": [
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "100.63%",
+            "MemUsage": "235.9MiB / 3.823GiB",
+            "MemPerc": "6.03%",
+            "PIDs": "35"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "60.87%",
+            "MemUsage": "62.93MiB / 3.823GiB",
+            "MemPerc": "1.61%",
+            "PIDs": "27"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "18.82%",
+            "MemUsage": "75.92MiB / 3.823GiB",
+            "MemPerc": "1.94%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "100.13%",
+            "MemUsage": "236.2MiB / 3.823GiB",
+            "MemPerc": "6.03%",
+            "PIDs": "35"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "78.02%",
+            "MemUsage": "64.06MiB / 3.823GiB",
+            "MemPerc": "1.64%",
+            "PIDs": "28"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "15.63%",
+            "MemUsage": "89.05MiB / 3.823GiB",
+            "MemPerc": "2.27%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "112.37%",
+            "MemUsage": "249.2MiB / 3.823GiB",
+            "MemPerc": "6.37%",
+            "PIDs": "36"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "67.96%",
+            "MemUsage": "63.33MiB / 3.823GiB",
+            "MemPerc": "1.62%",
+            "PIDs": "27"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "17.75%",
+            "MemUsage": "90.15MiB / 3.823GiB",
+            "MemPerc": "2.30%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "103.79%",
+            "MemUsage": "243.6MiB / 3.823GiB",
+            "MemPerc": "6.22%",
+            "PIDs": "37"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "75.47%",
+            "MemUsage": "60.04MiB / 3.823GiB",
+            "MemPerc": "1.53%",
+            "PIDs": "27"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "10.02%",
+            "MemUsage": "87.23MiB / 3.823GiB",
+            "MemPerc": "2.23%",
+            "PIDs": "12"
+          }
+        ]
+      ],
+      "raw_generator_output": "Running 20s test @ https://qazaqmetal.109.235.119.144.sslip.io/api/catalog?limit=30\n  2 threads and 500 connections\n  Thread Stats   Avg      Stdev     Max   +/- Stdev\n    Latency     1.42s   245.12ms   1.88s    76.29%\n    Req/Sec   170.23     69.30   420.00     70.88%\n  Latency Distribution\n     50%    1.46s \n     75%    1.59s \n     90%    1.70s \n     99%    1.80s \n  6597 requests in 20.06s, 62.10MB read\nRequests/sec:    328.87\nTransfer/sec:      3.10MB\nQM_STATUS 200 6597\nQM_SUMMARY 6597 20059648\nQM_P95_US 1743251\n"
+    },
+    {
+      "label": "native-wrk-1000",
+      "model": "native multithreaded closed-loop HTTPS generator; not a paced RPS guarantee",
+      "concurrency_limit": 1000,
+      "duration_seconds": 20.041,
+      "requests_completed": 6769,
+      "statuses": {
+        "200": 6769
+      },
+      "socket_errors": 6092,
+      "successful_rps": 337.76,
+      "p95_ms": 1895.31,
+      "generator_threads": 2,
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 79529246\nuser_usec 66211644\nsystem_usec 13317601\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  93534 6892 38657 2909147 1805 0 3272 19055 0 0",
+        "memory_current_bytes": "256667648",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          7.48193359375,
+          2.669921875,
+          1.21875
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 99983992\nuser_usec 82733495\nsystem_usec 17250497\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  95930 6892 39979 2909457 1805 0 3493 19074 0 0",
+        "memory_current_bytes": "262836224",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          7.98974609375,
+          3.09765625,
+          1.39111328125
+        ]
+      },
+      "container_samples": [
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "101.38%",
+            "MemUsage": "242.4MiB / 3.823GiB",
+            "MemPerc": "6.19%",
+            "PIDs": "35"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "49.01%",
+            "MemUsage": "60.74MiB / 3.823GiB",
+            "MemPerc": "1.55%",
+            "PIDs": "26"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "70.29%",
+            "MemUsage": "107.1MiB / 3.823GiB",
+            "MemPerc": "2.74%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "105.75%",
+            "MemUsage": "242.8MiB / 3.823GiB",
+            "MemPerc": "6.20%",
+            "PIDs": "36"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "66.54%",
+            "MemUsage": "64.12MiB / 3.823GiB",
+            "MemPerc": "1.64%",
+            "PIDs": "27"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "14.10%",
+            "MemUsage": "143.1MiB / 3.823GiB",
+            "MemPerc": "3.65%",
+            "PIDs": "12"
+          }
+        ],
+        [
+          {
+            "Name": "qazaqmetal-api-1",
+            "CPUPerc": "97.83%",
+            "MemUsage": "242.9MiB / 3.823GiB",
+            "MemPerc": "6.20%",
+            "PIDs": "35"
+          },
+          {
+            "Name": "qazaqmetal-db-1",
+            "CPUPerc": "70.67%",
+            "MemUsage": "61.23MiB / 3.823GiB",
+            "MemPerc": "1.56%",
+            "PIDs": "26"
+          },
+          {
+            "Name": "qazaqmetal-edge-1",
+            "CPUPerc": "15.38%",
+            "MemUsage": "150.5MiB / 3.823GiB",
+            "MemPerc": "3.84%",
+            "PIDs": "12"
+          }
+        ]
+      ],
+      "raw_generator_output": "Running 20s test @ https://qazaqmetal.109.235.119.144.sslip.io/api/catalog?limit=30\n  2 threads and 1000 connections\n  Thread Stats   Avg      Stdev     Max   +/- Stdev\n    Latency     1.19s   411.89ms   2.00s    63.07%\n    Req/Sec   177.01     67.79   410.00     71.32%\n  Latency Distribution\n     50%    1.09s \n     75%    1.51s \n     90%    1.82s \n     99%    1.98s \n  6769 requests in 20.04s, 63.72MB read\n  Socket errors: connect 0, read 0, write 0, timeout 6092\nRequests/sec:    337.76\nTransfer/sec:      3.18MB\nQM_STATUS 200 6769\nQM_SUMMARY 6769 20040722\nQM_P95_US 1895314\n"
+    }
+  ],
+  "stages": [
+    {
+      "label": "post-optimization-100",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 15.306,
+      "concurrency_limit": 100,
+      "peak_client_inflight": 100,
+      "scheduled": 5066,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 5066,
+      "statuses": {
+        "200": 5066
+      },
+      "successful_rps_including_drain": 330.97,
+      "successful_rps_within_planned_window": 331.07,
+      "error_percent": 0.0,
+      "p50_ms": 281.23,
+      "p95_ms": 400.68,
+      "max_ms": 1145.56,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.861
+        },
+        {
+          "status": 200,
+          "seconds": 0.68
+        },
+        {
+          "status": 200,
+          "seconds": 0.653
+        },
+        {
+          "status": 200,
+          "seconds": 0.772
+        },
+        {
+          "status": 200,
+          "seconds": 0.672
+        },
+        {
+          "status": 200,
+          "seconds": 0.691
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 101246117\nuser_usec 83792023\nsystem_usec 17454094\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  96077 6892 40057 2909464 1805 0 3497 19074 0 0",
+        "memory_current_bytes": "263057408",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          7.98974609375,
+          3.09765625,
+          1.39111328125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 115295338\nuser_usec 95270091\nsystem_usec 20025247\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  97802 6892 40980 2909969 1805 0 3616 19105 0 0",
+        "memory_current_bytes": "262774784",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          9.97412109375,
+          3.77880859375,
+          1.6416015625
+        ]
+      }
+    },
+    {
+      "label": "post-optimization-250",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 15.689,
+      "concurrency_limit": 250,
+      "peak_client_inflight": 250,
+      "scheduled": 5057,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 5057,
+      "statuses": {
+        "200": 5057
+      },
+      "successful_rps_including_drain": 322.32,
+      "successful_rps_within_planned_window": 320.47,
+      "error_percent": 0.0,
+      "p50_ms": 708.76,
+      "p95_ms": 1086.9,
+      "max_ms": 2151.31,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 1.564
+        },
+        {
+          "status": 200,
+          "seconds": 0.783
+        },
+        {
+          "status": 200,
+          "seconds": 0.608
+        },
+        {
+          "status": 200,
+          "seconds": 0.681
+        },
+        {
+          "status": 200,
+          "seconds": 0.619
+        },
+        {
+          "status": 200,
+          "seconds": 0.682
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 115500424\nuser_usec 95445084\nsystem_usec 20055339\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  97827 6892 40990 2911051 1805 0 3616 19115 0 0",
+        "memory_current_bytes": "262647808",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          8.4404296875,
+          3.65380859375,
+          1.62353515625
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 129559926\nuser_usec 106814607\nsystem_usec 22745318\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  99564 6892 41929 2911603 1805 0 3743 19138 0 0",
+        "memory_current_bytes": "263049216",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          9.29736328125,
+          4.06640625,
+          1.791015625
+        ]
+      }
+    },
+    {
+      "label": "post-optimization-500",
+      "model": "closed-loop",
+      "offered_rps": null,
+      "planned_duration_seconds": 15,
+      "duration_including_drain_seconds": 4.559,
+      "concurrency_limit": 500,
+      "peak_client_inflight": 500,
+      "scheduled": 911,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 911,
+      "statuses": {
+        "200": 911
+      },
+      "successful_rps_including_drain": 199.85,
+      "successful_rps_within_planned_window": 60.73,
+      "error_percent": 0.0,
+      "p50_ms": 2264.82,
+      "p95_ms": 3314.52,
+      "max_ms": 3713.62,
+      "scheduler_max_lag_ms": 0.0,
+      "safety_stop": true,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 2.48
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 129722890\nuser_usec 106956724\nsystem_usec 22766165\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  99587 6892 41939 2912686 1805 0 3744 19140 0 0",
+        "memory_current_bytes": "262819840",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          8.552734375,
+          3.99853515625,
+          1.78125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 133021993\nuser_usec 109620615\nsystem_usec 23401377\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  99991 6892 42158 2913169 1805 0 3780 19155 0 0",
+        "memory_current_bytes": "263020544",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          7.86767578125,
+          3.93212890625,
+          1.771484375
+        ]
+      }
+    },
+    {
+      "label": "target-10000-rps",
+      "model": "open-loop with explicit in-flight cap and recorded drops",
+      "offered_rps": 10000,
+      "planned_duration_seconds": 5,
+      "duration_including_drain_seconds": 10.849,
+      "concurrency_limit": 2000,
+      "peak_client_inflight": 1999,
+      "scheduled": 2400,
+      "client_dropped": 320,
+      "unoffered_due_to_abort": 47600,
+      "requests_completed": 2080,
+      "statuses": {
+        "200": 2080
+      },
+      "successful_rps_including_drain": 191.72,
+      "successful_rps_within_planned_window": 16.0,
+      "error_percent": 0.0,
+      "p50_ms": 8197.87,
+      "p95_ms": 9499.2,
+      "max_ms": 10005.98,
+      "scheduler_max_lag_ms": 7669.56,
+      "safety_stop": true,
+      "health_checks": [
+        {
+          "status": "timeout"
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 133324793\nuser_usec 109870506\nsystem_usec 23454286\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  100029 6892 42175 2915224 1805 0 3781 19162 0 0",
+        "memory_current_bytes": "272900096",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          6.65771484375,
+          3.80224609375,
+          1.751953125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 140237085\nuser_usec 115416436\nsystem_usec 24820649\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  100927 6892 42654 2916148 1805 0 3882 19179 0 0",
+        "memory_current_bytes": "262881280",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          6.25244140625,
+          3.84619140625,
+          1.798828125
+        ]
+      }
+    },
+    {
+      "label": "sustained-with-headroom",
+      "model": "open-loop with explicit in-flight cap and recorded drops",
+      "offered_rps": 198,
+      "planned_duration_seconds": 120,
+      "duration_including_drain_seconds": 120.189,
+      "concurrency_limit": 500,
+      "peak_client_inflight": 125,
+      "scheduled": 23760,
+      "client_dropped": 0,
+      "unoffered_due_to_abort": 0,
+      "requests_completed": 23760,
+      "statuses": {
+        "200": 23760
+      },
+      "successful_rps_including_drain": 197.69,
+      "successful_rps_within_planned_window": 197.67,
+      "error_percent": 0.0,
+      "p50_ms": 205.29,
+      "p95_ms": 217.8,
+      "max_ms": 1031.79,
+      "scheduler_max_lag_ms": 56.26,
+      "safety_stop": false,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.619
+        },
+        {
+          "status": 200,
+          "seconds": 0.663
+        },
+        {
+          "status": 200,
+          "seconds": 0.625
+        },
+        {
+          "status": 200,
+          "seconds": 0.618
+        },
+        {
+          "status": 200,
+          "seconds": 0.65
+        },
+        {
+          "status": 200,
+          "seconds": 0.617
+        },
+        {
+          "status": 200,
+          "seconds": 0.683
+        },
+        {
+          "status": 200,
+          "seconds": 0.577
+        },
+        {
+          "status": 200,
+          "seconds": 0.602
+        },
+        {
+          "status": 200,
+          "seconds": 0.61
+        },
+        {
+          "status": 200,
+          "seconds": 0.62
+        },
+        {
+          "status": 200,
+          "seconds": 0.676
+        },
+        {
+          "status": 200,
+          "seconds": 0.65
+        },
+        {
+          "status": 200,
+          "seconds": 0.753
+        },
+        {
+          "status": 200,
+          "seconds": 0.669
+        },
+        {
+          "status": 200,
+          "seconds": 0.573
+        },
+        {
+          "status": 200,
+          "seconds": 0.723
+        },
+        {
+          "status": 200,
+          "seconds": 0.659
+        },
+        {
+          "status": 200,
+          "seconds": 0.766
+        },
+        {
+          "status": 200,
+          "seconds": 0.626
+        },
+        {
+          "status": 200,
+          "seconds": 0.612
+        },
+        {
+          "status": 200,
+          "seconds": 0.802
+        },
+        {
+          "status": 200,
+          "seconds": 0.667
+        },
+        {
+          "status": 200,
+          "seconds": 0.776
+        },
+        {
+          "status": 200,
+          "seconds": 0.617
+        },
+        {
+          "status": 200,
+          "seconds": 0.652
+        },
+        {
+          "status": 200,
+          "seconds": 0.583
+        },
+        {
+          "status": 200,
+          "seconds": 0.669
+        },
+        {
+          "status": 200,
+          "seconds": 0.613
+        },
+        {
+          "status": 200,
+          "seconds": 0.601
+        },
+        {
+          "status": 200,
+          "seconds": 0.626
+        },
+        {
+          "status": 200,
+          "seconds": 0.749
+        },
+        {
+          "status": 200,
+          "seconds": 0.574
+        },
+        {
+          "status": 200,
+          "seconds": 0.668
+        },
+        {
+          "status": 200,
+          "seconds": 0.604
+        },
+        {
+          "status": 200,
+          "seconds": 0.656
+        },
+        {
+          "status": 200,
+          "seconds": 0.573
+        },
+        {
+          "status": 200,
+          "seconds": 0.589
+        },
+        {
+          "status": 200,
+          "seconds": 0.629
+        },
+        {
+          "status": 200,
+          "seconds": 0.575
+        },
+        {
+          "status": 200,
+          "seconds": 0.612
+        },
+        {
+          "status": 200,
+          "seconds": 0.611
+        },
+        {
+          "status": 200,
+          "seconds": 0.573
+        },
+        {
+          "status": 200,
+          "seconds": 0.7
+        },
+        {
+          "status": 200,
+          "seconds": 0.629
+        },
+        {
+          "status": 200,
+          "seconds": 0.604
+        }
+      ],
+      "api_container_before": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 140737030\nuser_usec 115851885\nsystem_usec 24885144\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  100989 6892 42674 2919167 1805 0 3883 19196 0 0",
+        "memory_current_bytes": "262668288",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          4.86669921875,
+          3.6572265625,
+          1.76953125
+        ]
+      },
+      "api_container_after": {
+        "cpu_cores": 2,
+        "cpu_stat": "usage_usec 206523074\nuser_usec 171631937\nsystem_usec 34891137\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpu_quota": "max 100000",
+        "host_cpu_stat": "cpu  108684 6892 45076 2931641 1806 0 4475 19954 0 0",
+        "memory_current_bytes": "262127616",
+        "memory_limit_bytes": "max",
+        "load_average": [
+          2.3310546875,
+          2.9794921875,
+          1.74560546875
+        ]
+      }
+    }
+  ],
+  "health_after": 200
+}

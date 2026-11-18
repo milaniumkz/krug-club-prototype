@@ -1,0 +1,322 @@
+{
+  "target_requested_rps": 10000000,
+  "target_verified": false,
+  "method": "closed-loop staged HTTPS authenticated catalog read; one external GitHub runner, one temporary test member; not a distributed open-loop RPS test",
+  "endpoint": "GET /api/catalog?limit=30",
+  "read_only": true,
+  "stage_duration_seconds": 15,
+  "cpu_cores": 2,
+  "stages": [
+    {
+      "concurrency": 1,
+      "peak_client_inflight": 1,
+      "requests": 54,
+      "duration_seconds": 15.035,
+      "statuses": {
+        "200": 54
+      },
+      "successful_rps": 3.59,
+      "error_percent": 0.0,
+      "p50_ms": 277.86,
+      "p95_ms": 282.36,
+      "max_ms": 286.11,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.819
+        },
+        {
+          "status": 200,
+          "seconds": 0.809
+        },
+        {
+          "status": 200,
+          "seconds": 0.829
+        },
+        {
+          "status": 200,
+          "seconds": 0.848
+        },
+        {
+          "status": 200,
+          "seconds": 0.907
+        }
+      ]
+    },
+    {
+      "concurrency": 10,
+      "peak_client_inflight": 10,
+      "requests": 511,
+      "duration_seconds": 15.248,
+      "statuses": {
+        "200": 511
+      },
+      "successful_rps": 33.51,
+      "error_percent": 0.0,
+      "p50_ms": 282.97,
+      "p95_ms": 302.44,
+      "max_ms": 930.15,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.851
+        },
+        {
+          "status": 200,
+          "seconds": 0.818
+        },
+        {
+          "status": 200,
+          "seconds": 0.902
+        },
+        {
+          "status": 200,
+          "seconds": 0.842
+        },
+        {
+          "status": 200,
+          "seconds": 0.814
+        },
+        {
+          "status": 200,
+          "seconds": 0.818
+        }
+      ]
+    },
+    {
+      "concurrency": 25,
+      "peak_client_inflight": 25,
+      "requests": 1285,
+      "duration_seconds": 15.281,
+      "statuses": {
+        "200": 1285
+      },
+      "successful_rps": 84.09,
+      "error_percent": 0.0,
+      "p50_ms": 284.72,
+      "p95_ms": 306.74,
+      "max_ms": 1333.23,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.904
+        },
+        {
+          "status": 200,
+          "seconds": 0.815
+        },
+        {
+          "status": 200,
+          "seconds": 0.827
+        },
+        {
+          "status": 200,
+          "seconds": 0.864
+        },
+        {
+          "status": 200,
+          "seconds": 0.811
+        },
+        {
+          "status": 200,
+          "seconds": 0.869
+        }
+      ]
+    },
+    {
+      "concurrency": 50,
+      "peak_client_inflight": 50,
+      "requests": 2526,
+      "duration_seconds": 15.299,
+      "statuses": {
+        "200": 2526
+      },
+      "successful_rps": 165.11,
+      "error_percent": 0.0,
+      "p50_ms": 289.91,
+      "p95_ms": 328.14,
+      "max_ms": 999.02,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.948
+        },
+        {
+          "status": 200,
+          "seconds": 0.81
+        },
+        {
+          "status": 200,
+          "seconds": 0.878
+        },
+        {
+          "status": 200,
+          "seconds": 0.819
+        },
+        {
+          "status": 200,
+          "seconds": 0.844
+        },
+        {
+          "status": 200,
+          "seconds": 0.832
+        }
+      ]
+    },
+    {
+      "concurrency": 100,
+      "peak_client_inflight": 100,
+      "requests": 3232,
+      "duration_seconds": 15.401,
+      "statuses": {
+        "200": 3232
+      },
+      "successful_rps": 209.86,
+      "error_percent": 0.0,
+      "p50_ms": 448.39,
+      "p95_ms": 639.77,
+      "max_ms": 1279.43,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 0.941
+        },
+        {
+          "status": 200,
+          "seconds": 0.867
+        },
+        {
+          "status": 200,
+          "seconds": 0.858
+        },
+        {
+          "status": 200,
+          "seconds": 0.89
+        },
+        {
+          "status": 200,
+          "seconds": 0.895
+        },
+        {
+          "status": 200,
+          "seconds": 0.849
+        }
+      ]
+    },
+    {
+      "concurrency": 250,
+      "peak_client_inflight": 250,
+      "requests": 3207,
+      "duration_seconds": 16.113,
+      "statuses": {
+        "200": 3207
+      },
+      "successful_rps": 199.03,
+      "error_percent": 0.0,
+      "p50_ms": 1124.57,
+      "p95_ms": 1597.07,
+      "max_ms": 2742.71,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 1.373
+        },
+        {
+          "status": 200,
+          "seconds": 0.842
+        },
+        {
+          "status": 200,
+          "seconds": 0.934
+        },
+        {
+          "status": 200,
+          "seconds": 0.886
+        },
+        {
+          "status": 200,
+          "seconds": 0.835
+        },
+        {
+          "status": 200,
+          "seconds": 0.884
+        }
+      ]
+    },
+    {
+      "concurrency": 500,
+      "peak_client_inflight": 500,
+      "requests": 3722,
+      "duration_seconds": 17.059,
+      "statuses": {
+        "200": 3722
+      },
+      "successful_rps": 218.18,
+      "error_percent": 0.0,
+      "p50_ms": 2200.0,
+      "p95_ms": 2744.32,
+      "max_ms": 4166.26,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 1.572
+        },
+        {
+          "status": 200,
+          "seconds": 0.896
+        },
+        {
+          "status": 200,
+          "seconds": 0.855
+        },
+        {
+          "status": 200,
+          "seconds": 0.889
+        },
+        {
+          "status": 200,
+          "seconds": 0.955
+        }
+      ]
+    },
+    {
+      "concurrency": 1000,
+      "peak_client_inflight": 1000,
+      "requests": 4136,
+      "duration_seconds": 19.225,
+      "statuses": {
+        "200": 4136
+      },
+      "successful_rps": 215.13,
+      "error_percent": 0.0,
+      "p50_ms": 4419.02,
+      "p95_ms": 5082.6,
+      "max_ms": 6653.64,
+      "health_checks": [
+        {
+          "status": 200,
+          "seconds": 2.324
+        },
+        {
+          "status": 200,
+          "seconds": 0.887
+        },
+        {
+          "status": 200,
+          "seconds": 0.854
+        },
+        {
+          "status": 200,
+          "seconds": 0.939
+        },
+        {
+          "status": 200,
+          "seconds": 0.925
+        }
+      ]
+    }
+  ],
+  "stop_reason": "p95 exceeded 3000 ms; higher concurrency would increase queueing",
+  "best_observed_successful_rps": 218.18,
+  "health_after": 200
+}
