@@ -12,6 +12,9 @@ _task = None
 
 
 def invalidate(scope):
+    if scope == 'catalog':
+        from .catalog_cache import invalidate as clear_catalog
+        clear_catalog()
     for queue, scopes in tuple(_subscribers.items()):
         if scope in scopes and queue.empty():
             queue.put_nowait(False)

@@ -24,7 +24,7 @@ from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from . import schemas as S
-from . import session_events
+from . import session_events, catalog_cache
 from .middleware import Protection
 from .notifications import offer_approved
 from .db import PushDevice, Notification
@@ -303,6 +303,17 @@ def catalog(q: str = '', category: str = '', favorites_only: bool = False, latit
             north: float | None = Query(None, ge=-90, le=90),
             limit: int = Query(50, ge=1, le=500), offset: int = Query(0, ge=0),
             user=Depends(member), db=Depends(get_db)):
+    # This endpoint has already executed member/current_user against the DB.
+    # Never share personal favorites; public catalog pages are scoped by organization.
+    cache_key = None
+    generation = None
+    if not favorites_only:
+        local_day = datetime.now(timezone(timedelta(hours=5))).date().isoformat()
+        cache_key = (db.get_bind(), user.organization_id, local_day, q, category,
+                     latitude, longitude, west, south, east, north, limit, offset)
+        cached, generation = catalog_cache.get(cache_key)
+        if cached is not None:
+            return Response(cached, media_type='application/json')
     rows = public_venues(db, user, favorites_only=favorites_only)
     results = []
     for r in rows:
@@ -334,7 +345,10 @@ def catalog(q: str = '', category: str = '', favorites_only: bool = False, latit
         for offer in offers:
             if active_data(offer.published, user.organization_id):
                 by_id[offer.venue_id]['offers'].append(resource_json(offer))
-    return JSONResponse({'items': page, 'total': len(results)})
+    response = JSONResponse({'items': page, 'total': len(results)})
+    if cache_key is not None:
+        catalog_cache.put(cache_key, response.body, generation)
+    return response
 
 
 @app.get('/api/catalog/{resource_id}')
@@ -540,6 +554,7 @@ def review(revision_id: str, body: S.ReviewIn, user=Depends(admin), db=Depends(g
     rev.reason = body.reason
     rev.moderator_id = user.id
     rev.reviewed_at = now()
+    session_events.publish(db, 'catalog')
     audit(db, user, 'moderation_' + rev.status, resource.id, revision_id=rev.id, reason=body.reason)
     db.commit()
     return revision_json(rev)
@@ -549,6 +564,7 @@ def review(revision_id: str, body: S.ReviewIn, user=Depends(admin), db=Depends(g
 def visibility(resource_id: str, body: S.ToggleIn, user=Depends(admin), db=Depends(get_db)):
     resource = require(db.get(Resource, resource_id))
     resource.enabled = body.enabled
+    session_events.publish(db, 'catalog')
     audit(db, user, 'visibility_changed', resource_id, enabled=body.enabled, reason=body.reason)
     db.commit()
     return resource_json(resource)
@@ -653,6 +669,7 @@ def edit_org(org_id: str, body: S.OrganizationIn, user=Depends(admin), db=Depend
         setattr(r, k, value)
     if not body.active:
         session_events.publish(db, 'org:'+org_id)
+    session_events.publish(db, 'catalog')
     audit(db, user, 'organization_updated', org_id, active=body.active)
     db.commit()
     return {'ok': True}
@@ -679,6 +696,7 @@ def edit_partner(partner_id: str, body: S.PartnerIn, user=Depends(admin), db=Dep
     r.name, r.active = body.name, body.active
     if not body.active:
         session_events.publish(db, 'partner:'+partner_id)
+    session_events.publish(db, 'catalog')
     audit(db, user, 'partner_updated', partner_id, active=body.active)
     db.commit()
     return {'ok': True}
