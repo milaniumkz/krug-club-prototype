@@ -114,7 +114,14 @@ try:
     page.reload();enable()
    page.get_by_text('Обзор',exact=True).first.wait_for()
    checks.append({'case':role+' portal opens after browser reload without PIN','result':'PASS'})
-   page.screenshot(path=str(out/('staff-'+role+'.png')));staff_context.close()
+   page.screenshot(path=str(out/('staff-'+role+'.png')))
+   for width in (390,320):
+    page.set_viewport_size({'width':width,'height':844});page.wait_for_timeout(700)
+    page.get_by_text('Обзор',exact=True).first.wait_for()
+    assert page.get_by_text('Введите PIN-код',exact=True).count()==0
+    page.screenshot(path=str(out/('staff-'+role+'-'+str(width)+'.png')))
+    checks.append({'case':role+' mobile layout '+str(width)+'px','result':'PASS'})
+   staff_context.close()
   page=member_page
   page.goto(BASE);enable()
   fill('Табельный номер',member_identifier);fill('Пароль',browser_temporary)
