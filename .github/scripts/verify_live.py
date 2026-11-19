@@ -12,23 +12,26 @@ def remote(code,payload):
  ch=ssh.open_session();ch.exec_command('cd /opt/qazaqmetal/current && docker compose exec -T api python -c '+shlex.quote(code));ch.sendall(json.dumps(payload).encode());ch.shutdown_write();data=ch.makefile('r').read();err=ch.makefile_stderr('r').read();status=ch.recv_exit_status()
  if status:raise RuntimeError('QA administrative operation failed; no credentials logged')
  return json.loads(data) if data.strip() else None
-qa='qa-live-'+uuid.uuid4().hex[:12];member_identifier=qa+'-member';admin_password=secrets.token_urlsafe(24);memberid=None;adminid=None
+qa='qa-live-'+uuid.uuid4().hex[:12];member_identifier=qa+'-member';admin_password=secrets.token_urlsafe(24);memberid=None;adminid=None;staffid=None
 bootstrap='''import json,sys
 from sqlalchemy import select
-from app.db import SessionLocal,User
+from app.db import SessionLocal,User,Partner
 from app.security import hash_password
 p=json.load(sys.stdin)
 with SessionLocal() as db:
  assert not db.scalar(select(User).where(User.username==p['name']))
  u=User(username=p['name'],name='QA · проверка запуска',role='admin',must_change_password=False,password_hash=hash_password(p['password']))
- db.add(u);db.commit();print(json.dumps({'id':u.id}))
+ db.add(u);db.flush()
+ partner=db.scalar(select(Partner).where(Partner.active.is_(True)).limit(1))
+ staff=User(username=p['name']+'-partner',name='QA · партнёр',role='partner',partner_id=partner.id,must_change_password=False,password_hash=hash_password(p['password']))
+ db.add(staff);db.commit();print(json.dumps({'id':u.id,'staff_id':staff.id}))
 '''
 client=httpx.Client(base_url=BASE,timeout=30,follow_redirects=True,headers={'X-QM-Client':'web'})
 def call(method,path,body=None,token=None,status=200):
  headers={'Authorization':'Bearer '+token} if token else {}
  role=token_roles.get(token,'member')
  if path=='/api/auth/login' and body:
-  identifier=body['identifier'];role='admin' if identifier==qa else 'partner' if identifier.startswith('partner') else 'member'
+  identifier=body['identifier'];role='admin' if identifier==qa else 'partner' if (identifier.startswith('partner') or identifier==qa+'-partner') else 'member'
  origin={'member':BASE,'partner':PARTNER,'admin':ADMIN}[role]
  r=client.request(method,origin+path,json=body,headers=headers)
  assert r.status_code==status,(method,path,r.status_code,status)
@@ -39,7 +42,7 @@ def call(method,path,body=None,token=None,status=200):
   return data
  return r.content
 try:
- adminid=remote(bootstrap,{'name':qa,'password':admin_password})['id']
+ created_staff=remote(bootstrap,{'name':qa,'password':admin_password});adminid=created_staff['id'];staffid=created_staff['staff_id']
  assert call('GET','/api/health')=={'status':'ok'}
  assert b'flutter' in call('GET','/').lower()
  assert len(call('GET','/main.dart.js'))>10000
@@ -98,6 +101,21 @@ try:
   def fill(label,value,prefix=False):
    field=page.get_by_role('textbox',name=re.compile('^'+re.escape(label)) if prefix else label,exact=not prefix)
    field.click();page.wait_for_timeout(250);page.keyboard.press('ControlOrMeta+A');page.keyboard.insert_text(value)
+  member_page=page
+  staff_token=call('POST','/api/auth/login',{'identifier':qa+'-partner','password':admin_password})['token']
+  for origin,session_token,role in [(ADMIN,admin,'admin'),(PARTNER,staff_token,'partner')]:
+   staff_context=browser.new_context(viewport={'width':1200,'height':900})
+   staff_context.add_cookies([{'name':'qm_session','value':session_token,'url':origin,'httpOnly':True,'secure':True,'sameSite':'Strict'}])
+   page=staff_context.new_page();page.set_default_timeout(15000);page.goto(origin);enable()
+   for reload in range(2):
+    page.get_by_text('Обзор',exact=True).first.wait_for()
+    assert page.get_by_text('Создайте PIN-код',exact=True).count()==0
+    assert page.get_by_text('Введите PIN-код',exact=True).count()==0
+    page.reload();enable()
+   page.get_by_text('Обзор',exact=True).first.wait_for()
+   checks.append({'case':role+' portal opens after browser reload without PIN','result':'PASS'})
+   page.screenshot(path=str(out/('staff-'+role+'.png')));staff_context.close()
+  page=member_page
   page.goto(BASE);enable()
   fill('Табельный номер',member_identifier);fill('Пароль',browser_temporary)
   page.get_by_role('button',name='Войти',exact=True).click();page.wait_for_timeout(1300)
@@ -111,7 +129,8 @@ try:
   assert ctx.request.get(BASE+'/api/auth/me').status==200
   page.get_by_role('tab',name='Главная',exact=True).wait_for()
   page.screenshot(path=str(out/'home.png'))
-  page.reload();enable();enter_pin('472918')
+  page.reload();enable();page.get_by_role('tab',name='Главная',exact=True).wait_for()
+  assert page.get_by_text('Введите PIN-код',exact=True).count()==0
   page.wait_for_timeout(1200)
   checks.append({'case':'first password with six characters, PIN setup and saved-session PIN unlock','result':'PASS'})
   for tab in ['Партнёры','На карте','QR','Профиль','Главная']:
@@ -155,14 +174,20 @@ finally:
  if adminid:
   cleanup='''import json,sys
 from sqlalchemy import delete,select
-from app.db import SessionLocal,User,Audit,Session,Ticket,Favorite,Visit
+from app.db import SessionLocal,User,Audit,Session,Ticket,Favorite,Visit,Notification,PushDelivery,PushDevice
 p=json.load(sys.stdin);ids=[x for x in p['ids'] if x]
 with SessionLocal() as db:
  users=db.scalars(select(User).where(User.id.in_(ids))).all()
  assert all((u.username or u.employee_number or '').startswith(p['prefix']) for u in users)
+ notices=select(Notification.id).where(Notification.user_id.in_(ids))
+ db.execute(delete(PushDelivery).where(PushDelivery.notification_id.in_(notices)))
+ devices=select(PushDevice.id).where(PushDevice.user_id.in_(ids))
+ db.execute(delete(PushDelivery).where(PushDelivery.device_id.in_(devices)))
+ db.execute(delete(Notification).where(Notification.user_id.in_(ids)))
+ db.execute(delete(PushDevice).where(PushDevice.user_id.in_(ids)))
  for model,column in [(Audit,Audit.actor_id),(Session,Session.user_id),(Ticket,Ticket.user_id),(Favorite,Favorite.user_id),(Visit,Visit.user_id)]:db.execute(delete(model).where(column.in_(ids)))
  db.execute(delete(User).where(User.id.in_(ids)));db.commit()
 print(json.dumps({'cleanup':'PASS'}))
 '''
-  remote(cleanup,{'ids':[adminid,memberid],'prefix':qa})
+  remote(cleanup,{'ids':[adminid,memberid,staffid],'prefix':qa})
  client.close();ssh.close();(out/'results.json').write_text(json.dumps({'url':BASE,'checks':checks,'physical_camera_tested':False,'test_accounts_removed':True},ensure_ascii=False,indent=2))
