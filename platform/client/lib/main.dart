@@ -34,7 +34,7 @@ class QazaqMetalApp extends StatelessWidget {
       title: 'QAZAQMETAL KÁSIPODAǴY',
       debugShowCheckedModeBanner: false,
       locale: Locale(appLanguage.code),
-      supportedLocales: const [Locale('ru'), Locale('en')],
+      supportedLocales: const [Locale('ru'), Locale('kk'), Locale('en')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: ThemeData(
         useMaterial3: true,
@@ -95,7 +95,7 @@ class QazaqMetalApp extends StatelessWidget {
           ? LoginPage(api: api)
           : api.user!['must_change_password'] == true
           ? PasswordPage(api: api, mandatory: true)
-          : api.watchSessions
+          : api.watchSessions && api.user!['role'] == 'member'
           ? PinLock(
               api: api,
               child: api.user!['role'] == 'member'

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:qazaqmetal/main.dart';
+import 'package:qazaqmetal/api.dart';
+import 'package:qazaqmetal/workspace.dart';
+import 'package:qazaqmetal/member.dart';
 import 'package:qazaqmetal/pin_lock.dart';
 import 'package:qazaqmetal/i18n.dart';
 import 'system_test.dart' show fakeApi, member;
@@ -22,6 +25,48 @@ void main() {
     appLanguage.code = 'ru';
   });
   tearDown(() => appLanguage.code = 'ru');
+  for (final role in ['admin', 'partner', 'member']) {
+    testWidgets('PIN gate is member-only across app reconstruction: $role', (
+      tester,
+    ) async {
+      final identity = {...member, 'role': role};
+      final api =
+          Api(client: fakeApi(user: identity).client, watchSessions: true)
+            ..user = identity
+            ..loading = false;
+      addTearDown(api.dispose);
+      for (var reload = 0; reload < 2; reload++) {
+        await tester.pumpWidget(QazaqMetalApp(api: api));
+        await tester.pumpAndSettle();
+        expect(
+          find.byType(PinLock),
+          role == 'member' ? findsOneWidget : findsNothing,
+        );
+        expect(
+          find.byType(WorkspaceShell),
+          role == 'member' ? findsNothing : findsOneWidget,
+        );
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      }
+    });
+    testWidgets('PIN settings are only shown to members: $role', (
+      tester,
+    ) async {
+      final api = fakeApi(user: {...member, 'role': role})
+        ..user = {...member, 'role': role}
+        ..loading = false;
+      await tester.pumpWidget(MaterialApp(home: ProfilePage(api: api)));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Изменить пароль'), 200);
+      expect(
+        find.text('PIN-код и биометрия'),
+        role == 'member' ? findsOneWidget : findsNothing,
+      );
+      await tester.pumpWidget(const SizedBox());
+      api.dispose();
+    });
+  }
   testWidgets(
     'PIN is created, stored as salted hash, requested again and rejects a wrong code',
     (tester) async {

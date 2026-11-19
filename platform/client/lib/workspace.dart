@@ -1,4 +1,5 @@
 import 'i18n.dart';
+import 'date_field.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -419,8 +420,8 @@ class _ResourceEditorState extends State<ResourceEditor> {
     'longitude': 'Долгота',
     'percent': 'Скидка, %',
     'terms': 'Условия и ограничения',
-    'starts_on': 'Начало, ГГГГ-ММ-ДД',
-    'ends_on': 'Окончание, ГГГГ-ММ-ДД',
+    'starts_on': 'Дата начала',
+    'ends_on': 'Дата окончания',
   };
   @override
   void initState() {
@@ -488,7 +489,7 @@ class _ResourceEditorState extends State<ResourceEditor> {
               (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(text) ||
                   DateTime.tryParse(text) == null ||
                   !DateTime.parse(text).toIso8601String().startsWith(text))) {
-            throw ApiError(422, 'Дата: ГГГГ-ММ-ДД');
+            throw ApiError(422, 'Выберите дату в календаре');
           }
           d[key] = text.isEmpty ? null : text;
         } else {
@@ -615,31 +616,48 @@ class _ResourceEditorState extends State<ResourceEditor> {
                   .map(
                     (key) => Padding(
                       padding: const EdgeInsets.only(top: 14),
-                      child: TextField(
-                        controller: controllers[key],
-                        decoration: InputDecoration(labelText: tx(names[key])),
-                        maxLines:
-                            [
-                              'description',
-                              'terms',
-                            ].contains(key.replaceFirst('_kk', ''))
-                            ? 4
-                            : 1,
-                        maxLength:
-                            [
-                              'description',
-                              'terms',
-                            ].contains(key.replaceFirst('_kk', ''))
-                            ? 4000
-                            : null,
-                        keyboardType:
-                            ['latitude', 'longitude', 'percent'].contains(key)
-                            ? const TextInputType.numberWithOptions(
-                                decimal: true,
-                                signed: true,
-                              )
-                            : TextInputType.text,
-                      ),
+                      child: key.endsWith('_on')
+                          ? CalendarDateField(
+                              controller: controllers[key]!,
+                              label: names[key]!,
+                              minimum: key == 'ends_on'
+                                  ? controllers['starts_on']
+                                  : null,
+                              maximum: key == 'starts_on'
+                                  ? controllers['ends_on']
+                                  : null,
+                            )
+                          : TextField(
+                              controller: controllers[key],
+                              decoration: InputDecoration(
+                                labelText: tx(names[key]),
+                              ),
+                              maxLines:
+                                  [
+                                    'description',
+                                    'terms',
+                                  ].contains(key.replaceFirst('_kk', ''))
+                                  ? 4
+                                  : 1,
+                              maxLength:
+                                  [
+                                    'description',
+                                    'terms',
+                                  ].contains(key.replaceFirst('_kk', ''))
+                                  ? 4000
+                                  : null,
+                              keyboardType:
+                                  [
+                                    'latitude',
+                                    'longitude',
+                                    'percent',
+                                  ].contains(key)
+                                  ? const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                      signed: true,
+                                    )
+                                  : TextInputType.text,
+                            ),
                     ),
                   ),
               if (widget.kind == 'venue')
@@ -1081,9 +1099,13 @@ class _StatsPageState extends State<StatsPage> {
   Future<void> choose(bool first) async {
     final d = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      initialDate:
+          (first ? start : end) ?? (first ? end : start) ?? DateTime.now(),
+      firstDate: first ? DateTime(2020) : (start ?? DateTime(2020)),
+      lastDate: first
+          ? (end ?? DateTime.now().add(const Duration(days: 1)))
+          : DateTime.now().add(const Duration(days: 1)),
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
     );
     if (d == null || !mounted) return;
     final nextStart = first ? d : start, nextEnd = first ? end : d;
@@ -1166,19 +1188,11 @@ class _StatsPageState extends State<StatsPage> {
             children: [
               OutlinedButton(
                 onPressed: () => choose(true),
-                child: AppText(
-                  start == null
-                      ? 'Дата от'
-                      : start!.toIso8601String().split('T').first,
-                ),
+                child: AppText(start == null ? 'Дата от' : displayDate(start)),
               ),
               OutlinedButton(
                 onPressed: () => choose(false),
-                child: AppText(
-                  end == null
-                      ? 'Дата до'
-                      : end!.toIso8601String().split('T').first,
-                ),
+                child: AppText(end == null ? 'Дата до' : displayDate(end)),
               ),
               TextButton(
                 onPressed: () => setState(() {
@@ -1953,7 +1967,7 @@ class AuditPage extends StatelessWidget {
             title: AppText(human(a['action'])),
             subtitle: SelectableText(
               tx(
-                '${a["created_at"]}\nОбъект: ${a["target"]}\n${jsonEncode(a["detail"])}',
+                '${displayMoment(a["created_at"])}\nОбъект: ${a["target"]}\n${jsonEncode(a["detail"])}',
               ),
               style: const TextStyle(fontSize: 11),
             ),

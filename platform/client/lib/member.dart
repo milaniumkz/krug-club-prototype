@@ -1,4 +1,5 @@
 import 'i18n.dart';
+import 'date_field.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'api.dart';
@@ -834,7 +835,9 @@ class VenuePage extends StatelessWidget {
                               const SizedBox(height: 10),
                               AppText(s(localizedData(o)['terms'])),
                               if (o['data']['ends_on'] != null)
-                                AppText('До ${o["data"]["ends_on"]}'),
+                                AppText(
+                                  'До ${displayDate(o["data"]["ends_on"])}',
+                                ),
                             ],
                           ),
                         ),
@@ -1083,12 +1086,13 @@ class ProfilePage extends StatelessWidget {
         Icons.notifications_none,
         () => route(context, NotificationsPage(api: api)),
       ),
-      profileTile(
-        context,
-        'PIN-код и биометрия',
-        Icons.fingerprint,
-        () => route(context, PinSettingsPage(api: api)),
-      ),
+      if (api.user!['role'] == 'member')
+        profileTile(
+          context,
+          'PIN-код и биометрия',
+          Icons.fingerprint,
+          () => route(context, PinSettingsPage(api: api)),
+        ),
       profileTile(
         context,
         'Изменить пароль',
@@ -1276,10 +1280,10 @@ class SessionsPage extends StatelessWidget {
             (session) => ListTile(
               leading: const Icon(Icons.devices),
               title: AppText(
-                'Вход: ${s(session["created_at"]).split("T").first}',
+                'Вход: ${displayMoment(session["created_at"], dateOnly: true)}',
               ),
               subtitle: AppText(
-                'До ${s(session["expires_at"]).split("T").first}',
+                'До ${displayMoment(session["expires_at"], dateOnly: true)}',
               ),
               trailing: IconButton(
                 tooltip: tx('Закрыть сессию'),
