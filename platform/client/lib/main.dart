@@ -1,4 +1,5 @@
 import 'i18n.dart';
+import 'push_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,6 +9,8 @@ import 'pin_lock.dart';
 import 'ui.dart';
 import 'member.dart';
 import 'workspace.dart';
+
+final appMessenger = GlobalKey<ScaffoldMessengerState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +23,26 @@ Future<void> main() async {
     );
   }
   await appLanguage.load();
-  runApp(QazaqMetalApp(api: Api()..boot()));
+  final api = Api();
+  PushService(
+    api,
+    onForeground: (message) {
+      if (message.isEmpty) {
+        appMessenger.currentState?.hideCurrentSnackBar();
+        return;
+      }
+      appMessenger.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          action: SnackBarAction(
+            label: tx('Открыть'),
+            onPressed: api.openNotifications,
+          ),
+        ),
+      );
+    },
+  ).start();
+  runApp(QazaqMetalApp(api: api..boot()));
 }
 
 class QazaqMetalApp extends StatelessWidget {
@@ -32,6 +54,7 @@ class QazaqMetalApp extends StatelessWidget {
     builder: (context, _) => MaterialApp(
       key: ValueKey(api.user?['id'] ?? 'guest'),
       title: 'QAZAQMETAL KÁSIPODAǴY',
+      scaffoldMessengerKey: appMessenger,
       debugShowCheckedModeBanner: false,
       locale: Locale(appLanguage.code),
       supportedLocales: const [Locale('ru'), Locale('kk'), Locale('en')],
@@ -95,7 +118,7 @@ class QazaqMetalApp extends StatelessWidget {
           ? LoginPage(api: api)
           : api.user!['must_change_password'] == true
           ? PasswordPage(api: api, mandatory: true)
-          : api.watchSessions && api.user!['role'] == 'member'
+          : api.watchSessions && api.supportsPin
           ? PinLock(
               api: api,
               child: api.user!['role'] == 'member'

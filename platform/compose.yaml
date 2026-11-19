@@ -27,6 +27,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://qazaqmetal:${DB_PASSWORD:?}@db:5432/qazaqmetal
       APP_ENV: production
+      FIREBASE_CLIENT_CONFIG: ${FIREBASE_CLIENT_CONFIG:-}
       PUBLIC_ORIGIN: https://${DOMAIN:?Set DOMAIN in .env}
       MEMBER_HOST: ${DOMAIN:?}
       PARTNER_HOST: ${PARTNER_HOST:-qazaqmetalpartners.109.235.119.144.sslip.io}

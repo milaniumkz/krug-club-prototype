@@ -26,7 +26,7 @@ void main() {
   });
   tearDown(() => appLanguage.code = 'ru');
   for (final role in ['admin', 'partner', 'member']) {
-    testWidgets('PIN gate is member-only across app reconstruction: $role', (
+    testWidgets('Native PIN policy survives app reconstruction: $role', (
       tester,
     ) async {
       final identity = {...member, 'role': role};
@@ -40,17 +40,17 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           find.byType(PinLock),
-          role == 'member' ? findsOneWidget : findsNothing,
+          role != 'admin' ? findsOneWidget : findsNothing,
         );
         expect(
           find.byType(WorkspaceShell),
-          role == 'member' ? findsNothing : findsOneWidget,
+          role != 'admin' ? findsNothing : findsOneWidget,
         );
         await tester.pumpWidget(const SizedBox());
         await tester.pumpAndSettle();
       }
     });
-    testWidgets('PIN settings are only shown to members: $role', (
+    testWidgets('Native PIN settings follow role policy: $role', (
       tester,
     ) async {
       final api = fakeApi(user: {...member, 'role': role})
@@ -61,7 +61,7 @@ void main() {
       await tester.scrollUntilVisible(find.text('Изменить пароль'), 200);
       expect(
         find.text('PIN-код и биометрия'),
-        role == 'member' ? findsOneWidget : findsNothing,
+        role != 'admin' ? findsOneWidget : findsNothing,
       );
       await tester.pumpWidget(const SizedBox());
       api.dispose();
@@ -169,6 +169,43 @@ void main() {
       },
     );
   }
+  testWidgets(
+    'Native PIN ignores dialogs and brief background, locks after 30 seconds',
+    (tester) async {
+      var clock = DateTime(2027, 1, 1);
+      final api = fakeApi()..user = member;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PinLock(
+            api: api,
+            biometricsAllowed: false,
+            clock: () => clock,
+            child: const Text('Unlocked session'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await enterPin(tester, '123456');
+      await enterPin(tester, '123456');
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text('Unlocked session'), findsOneWidget);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      clock = clock.add(const Duration(seconds: 5));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text('Unlocked session'), findsOneWidget);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      clock = clock.add(const Duration(seconds: 31));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text('Введите PIN-код'), findsOneWidget);
+      expect(find.text('Создайте PIN-код'), findsNothing);
+      await enterPin(tester, '123456');
+      expect(find.text('Unlocked session'), findsOneWidget);
+    },
+  );
   testWidgets(
     'Login language switch translates fields and persists Kazakh preference',
     (tester) async {

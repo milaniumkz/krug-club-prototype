@@ -1,7 +1,7 @@
 name: qazaqmetal
 description: QAZAQMETAL KÁSIPODAǴY member and partner platform
 publish_to: none
-version: 2.2.2+15
+version: 2.3.0+16
 environment:
   sdk: '>=3.10.0 <4.0.0'
 dependencies:
@@ -25,6 +25,8 @@ dependencies:
   url_launcher: ^6.3.2
   cupertino_icons: ^1.0.8
   share_plus: ^12.0.1
+  firebase_core: 4.0.0
+  firebase_messaging: 16.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

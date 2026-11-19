@@ -34,11 +34,33 @@ class _MemberShellState extends State<MemberShell> {
       }
     });
   });
+
+  @override
+  void initState() {
+    super.initState();
+    widget.api.addListener(openPendingNotification);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => openPendingNotification(),
+    );
+  }
+
+  void openPendingNotification() {
+    if (mounted &&
+        widget.api.notificationsRequested &&
+        navigator.currentState != null) {
+      widget.api.notificationsRequested = false;
+      navigator.currentState!.push(
+        MaterialPageRoute(builder: (_) => NotificationsPage(api: widget.api)),
+      );
+    }
+  }
+
   int tab = 0;
   final navigator = GlobalKey<NavigatorState>();
   final selection = ValueNotifier<int>(0);
   @override
   void dispose() {
+    widget.api.removeListener(openPendingNotification);
     selection.dispose();
     super.dispose();
   }
@@ -816,6 +838,43 @@ class VenuePage extends StatelessWidget {
                           'Сейчас нет действующих скидок для вашей организации',
                         ),
                       ),
+                    ...rows(v['banners'] ?? []).map(
+                      (banner) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Panel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    minHeight: 100,
+                                    maxHeight: 600,
+                                  ),
+                                  child: Image.network(
+                                    '${api.base}${s(banner['data']['image'])}',
+                                    headers: api.headers,
+                                    width: double.infinity,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, _, _) => const Icon(
+                                      Icons.image_outlined,
+                                      size: 48,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              AppText(
+                                s(localizedData(banner)['name']),
+                                style: titleStyle(21),
+                              ),
+                              AppText(s(localizedData(banner)['description'])),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                     ...offers.map(
                       (o) => Padding(
                         padding: const EdgeInsets.only(bottom: 14),
@@ -922,7 +981,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                       title: AppText(s(v['venue_name']), style: titleStyle(20)),
                       subtitle: AppText(
-                        '${displayMoment(v["created_at"])}\n${v["offer_name"]}',
+                        '${displayMoment(v["created_at"])}\n${tx(s(v["offer_name"]))}',
                         style: const TextStyle(fontSize: 11, height: 1.5),
                       ),
                       trailing: AppText(
@@ -1086,7 +1145,7 @@ class ProfilePage extends StatelessWidget {
         Icons.notifications_none,
         () => route(context, NotificationsPage(api: api)),
       ),
-      if (api.user!['role'] == 'member')
+      if (api.supportsPin)
         profileTile(
           context,
           'PIN-код и биометрия',
@@ -1349,10 +1408,40 @@ class NotificationsPage extends StatelessWidget {
                         try {
                           await api.post('/me/notifications/${n['id']}/read');
                           if (context.mounted) {
-                            await route(
-                              context,
-                              VenuePage(api: api, id: s(n['venue_id'])),
-                            );
+                            if (api.user?['role'] == 'member') {
+                              await route(
+                                context,
+                                VenuePage(api: api, id: s(n['venue_id'])),
+                              );
+                            } else {
+                              await showDialog<void>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: AppText(
+                                    s(
+                                      n[appLanguage.code == 'kk'
+                                          ? 'title_kk'
+                                          : 'title'],
+                                    ),
+                                  ),
+                                  content: SingleChildScrollView(
+                                    child: AppText(
+                                      s(
+                                        n[appLanguage.code == 'kk'
+                                            ? 'body_kk'
+                                            : 'body'],
+                                      ),
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const AppText('Понятно'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
                           }
                           await refresh();
                         } catch (e) {

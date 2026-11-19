@@ -25,6 +25,7 @@ void main() {
     expect(find.text('15.01.2027'), findsOneWidget);
     await tester.tap(find.byType(TextFormField));
     await tester.pumpAndSettle();
+    expect(tester.testTextInput.isVisible, isFalse);
     final picker = tester.widget<CalendarDatePicker>(
       find.byType(CalendarDatePicker),
     );

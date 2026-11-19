@@ -1,4 +1,5 @@
 import 'i18n.dart';
+import 'tab_pin.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -30,6 +31,12 @@ class Api extends ChangeNotifier {
   String? token;
   Json? user;
   bool loading = true;
+  bool notificationsRequested = false;
+  void openNotifications() {
+    notificationsRequested = true;
+    notifyListeners();
+  }
+
   String? bootError;
   Api({
     http.Client? client,
@@ -54,6 +61,9 @@ class Api extends ChangeNotifier {
                accessibility: KeychainAccessibility.first_unlock_this_device,
              ),
            );
+  bool get supportsPin =>
+      user?['role'] == 'member' || (!kIsWeb && user?['role'] == 'partner');
+
   String get portal {
     if (kIsWeb) {
       final host = Uri.base.host.toLowerCase();
@@ -135,6 +145,8 @@ class Api extends ChangeNotifier {
   }
 
   Future<void> clear() async {
+    notificationsRequested = false;
+    clearTabUnlock();
     final previousUserId = user?['id']?.toString();
     ++_watchGeneration;
     _watchClient?.close();
@@ -215,6 +227,7 @@ class Api extends ChangeNotifier {
     });
     // A credential login starts a new PIN lifecycle. Boot and password rotation
     // retain the PIN belonging to the continuing authenticated session.
+    clearTabUnlock();
     await resetLocalPin(s(result['user']['id']));
     await accept(result);
   }

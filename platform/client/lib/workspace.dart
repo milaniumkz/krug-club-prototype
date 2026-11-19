@@ -13,7 +13,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:file_selector/file_selector.dart';
 import 'api.dart';
 import 'ui.dart';
-import 'member.dart' show ProfilePage;
+import 'member.dart' show ProfilePage, NotificationsPage;
 
 const labels = {
   'overview': 'Обзор',
@@ -27,6 +27,7 @@ const labels = {
   'tickets': 'Обращения',
   'audit': 'Журнал действий',
   'profile': 'Профиль',
+  'notifications': 'Уведомления',
 };
 const icons = {
   'overview': Icons.bar_chart_rounded,
@@ -40,6 +41,7 @@ const icons = {
   'tickets': Icons.support_agent_outlined,
   'audit': Icons.history_outlined,
   'profile': Icons.person_outline,
+  'notifications': Icons.notifications_none_rounded,
 };
 
 class WorkspaceShell extends StatefulWidget {
@@ -52,12 +54,33 @@ class WorkspaceShell extends StatefulWidget {
 class _WorkspaceShellState extends State<WorkspaceShell> {
   String page = 'overview';
   @override
+  void initState() {
+    super.initState();
+    widget.api.addListener(openPendingNotification);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => openPendingNotification(),
+    );
+  }
+
+  void openPendingNotification() {
+    if (mounted && widget.api.notificationsRequested) {
+      widget.api.notificationsRequested = false;
+      setState(() => page = 'notifications');
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.api.removeListener(openPendingNotification);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final admin = widget.api.user!['role'] == 'admin';
     final menu = [
       'overview',
       'venue',
-      'offer',
       'banner',
       if (admin) ...[
         'moderation',
@@ -67,10 +90,13 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         'tickets',
         'audit',
       ],
+      'notifications',
       'profile',
     ];
     Widget content() {
       switch (page) {
+        case 'notifications':
+          return NotificationsPage(api: widget.api);
         case 'overview':
           return StatsPage(api: widget.api);
         case 'venue':
@@ -132,15 +158,26 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
     );
     final mobile = admin
         ? ['overview', 'venue', 'moderation', 'accounts', 'profile']
-        : ['overview', 'venue', 'offer', 'banner', 'profile'];
+        : ['overview', 'venue', 'notifications', 'banner', 'profile'];
     return Scaffold(
       appBar: AppBar(
-        title: AppText(labels[page] ?? '', style: titleStyle(23)),
+        title: AppText(
+          labels[page] ?? '',
+          style: titleStyle(wide ? 23 : 20),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Chip(label: AppText(admin ? 'Администратор' : 'Партнёр')),
+          IconButton(
+            tooltip: tx('Уведомления'),
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () => navigate('notifications'),
           ),
+          if (MediaQuery.sizeOf(context).width >= 600)
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Chip(label: AppText(admin ? 'Администратор' : 'Партнёр')),
+            ),
         ],
       ),
       drawer: wide ? null : Drawer(child: SafeArea(child: nav())),
@@ -194,8 +231,25 @@ String revisionStatus(Json row) {
   }
 }
 
-Json editData(Json row) =>
-    Json.from((row['revision']?['data'] ?? row['data'] ?? {}) as Map);
+Json editData(Json row) {
+  final data = Json.from(
+    (row['revision']?['data'] ?? row['data'] ?? {}) as Map,
+  );
+  if (row['kind'] == 'venue' &&
+      data['percent'] == null &&
+      row['legacy_discount'] is Map) {
+    for (final key in [
+      'percent',
+      'terms',
+      'terms_kk',
+      'starts_on',
+      'ends_on',
+    ]) {
+      data[key] = row['legacy_discount'][key];
+    }
+  }
+  return data;
+}
 
 class ResourceList extends StatelessWidget {
   final Api api;
@@ -204,7 +258,27 @@ class ResourceList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LoadView(
     key: ValueKey(kind),
-    load: () => api.get('/workspace/resources?kind=$kind'),
+    load: () async {
+      if (kind != 'venue') return api.get('/workspace/resources?kind=$kind');
+      final all = rows(await api.get('/workspace/resources'));
+      final discounts = <String, Json>{};
+      for (final row in all) {
+        if (row['kind'] == 'offer' &&
+            row['deleted'] != true &&
+            row['enabled'] != false &&
+            row['data'] is Map) {
+          final id = s(row['venue_id']);
+          if ((row['data']['percent'] as num? ?? 0) >
+              (discounts[id]?['percent'] as num? ?? 0)) {
+            discounts[id] = Json.from(row['data'] as Map);
+          }
+        }
+      }
+      return all
+          .where((r) => r['kind'] == 'venue')
+          .map((r) => {...r, 'legacy_discount': discounts[s(r['id'])]})
+          .toList();
+    },
     builder: (data, refresh) => ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -263,6 +337,14 @@ class ResourceList extends StatelessWidget {
                         ),
                     ],
                   ),
+                  if (d['percent'] != null)
+                    AppText(
+                      'Скидка: ${d['percent']}%',
+                      style: const TextStyle(
+                        color: purple,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   AppText(
                     revisionStatus(row),
                     style: TextStyle(
@@ -447,8 +529,40 @@ class _ResourceEditorState extends State<ResourceEditor> {
 
   Future<void> init() async {
     try {
-      final all = rows(await widget.api.get('/workspace/resources?kind=venue'));
-      venues = all.where((v) => v['deleted'] != true).toList();
+      final all = rows(await widget.api.get('/workspace/resources'));
+      venues = all
+          .where((v) => v['kind'] == 'venue' && v['deleted'] != true)
+          .toList();
+      if (widget.kind == 'venue' &&
+          widget.row != null &&
+          controllers['percent']!.text.isEmpty) {
+        final legacy = all
+            .where(
+              (r) =>
+                  r['kind'] == 'offer' &&
+                  r['venue_id'] == widget.row!['id'] &&
+                  r['deleted'] != true &&
+                  r['enabled'] != false &&
+                  r['data'] != null,
+            )
+            .toList();
+        legacy.sort(
+          (a, b) => ((b['data']['percent'] as num?) ?? 0).compareTo(
+            (a['data']['percent'] as num?) ?? 0,
+          ),
+        );
+        if (legacy.isNotEmpty) {
+          for (final key in [
+            'percent',
+            'terms',
+            'terms_kk',
+            'starts_on',
+            'ends_on',
+          ]) {
+            controllers[key]!.text = s(legacy.first['data'][key]);
+          }
+        }
+      }
       final options = await widget.api.get('/workspace/options');
       orgs = rows(options['organizations']);
       partners = rows(options['partners']);
@@ -468,6 +582,10 @@ class _ResourceEditorState extends State<ResourceEditor> {
       error = null;
     });
     try {
+      if (widget.kind == 'venue' &&
+          controllers['percent']!.text.trim().isEmpty) {
+        throw ApiError(422, 'Укажите скидку в заведении');
+      }
       final d = <String, dynamic>{};
       for (final key in names.keys) {
         final text = controllers[key]!.text.trim();
@@ -482,6 +600,10 @@ class _ResourceEditorState extends State<ResourceEditor> {
         } else if (key == 'percent') {
           if (text.isNotEmpty && int.tryParse(text) == null) {
             throw ApiError(422, 'Процент должен быть целым числом');
+          }
+          if (text.isNotEmpty &&
+              (int.parse(text) < 1 || int.parse(text) > 100)) {
+            throw ApiError(422, 'Скидка должна быть от 1 до 100%');
           }
           d[key] = text.isEmpty ? null : int.parse(text);
         } else if (key.endsWith('_on')) {
@@ -594,10 +716,7 @@ class _ResourceEditorState extends State<ResourceEditor> {
                   .where(
                     (k) => widget.kind == 'venue'
                         ? ![
-                            'percent',
-                            'terms',
-                            'starts_on',
-                            'ends_on',
+                            // Venue discounts are edited here, not as separate offers.
                           ].contains(k.replaceFirst('_kk', ''))
                         : ![
                                 'category',
@@ -618,6 +737,7 @@ class _ResourceEditorState extends State<ResourceEditor> {
                       padding: const EdgeInsets.only(top: 14),
                       child: key.endsWith('_on')
                           ? CalendarDateField(
+                              key: ValueKey('date-$key'),
                               controller: controllers[key]!,
                               label: names[key]!,
                               minimum: key == 'ends_on'
@@ -1129,7 +1249,7 @@ class _StatsPageState extends State<StatsPage> {
       await widget.api.get(
         '/workspace/stats?venue_id=$venue${start == null ? '' : '&start=${start!.toIso8601String().split('T').first}'}${end == null ? '' : '&end=${end!.toIso8601String().split('T').first}'}',
       ),
-      await widget.api.get('/workspace/resources?kind=venue'),
+      await widget.api.get('/workspace/resources'),
     ],
     builder: (data, refresh) {
       final stats = Json.from(data[0] as Map);
@@ -1243,7 +1363,7 @@ class _StatsPageState extends State<StatsPage> {
             (o) => ListTile(
               title: AppText(s(o['venue_name'])),
               subtitle: AppText(
-                '${displayMoment(o["created_at"])}\n${o["offer_name"]}',
+                '${displayMoment(o["created_at"])}\n${tx(s(o["offer_name"]))}',
               ),
               trailing: AppText(
                 '−${o["percent"]}%',

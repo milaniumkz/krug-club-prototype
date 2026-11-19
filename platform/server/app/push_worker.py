@@ -7,7 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 import httpx
 from sqlalchemy import select
-from .db import Favorite, Notification, Organization, PushDelivery, PushDevice, SessionLocal, User, now
+from .db import Notification, Organization, PushDelivery, PushDevice, SessionLocal, User, now
 
 
 def main():
@@ -32,8 +32,9 @@ def main():
                 device = db.get(PushDevice, delivery.device_id)
                 user = db.get(User, notice.user_id)
                 org = db.get(Organization, user.organization_id) if user.organization_id else None
-                favorite = db.get(Favorite, (user.id, notice.venue_id))
-                if not device.active or device.user_id != user.id or user.status != 'active' or (user.member_until and user.member_until < now()) or (org and not org.active) or not favorite:
+                from .notifications import push_eligible
+                eligible = push_eligible(db, user, notice)
+                if not device.active or device.user_id != user.id or user.status != 'active' or (user.member_until and user.member_until < now()) or (org and not org.active) or not eligible:
                     delivery.status = 'cancelled'
                     continue
                 delivery.status = 'sending'
@@ -42,7 +43,7 @@ def main():
                 kk = device.language == 'kk'
                 message = {'token':device.token, 'notification':{'title':notice.title_kk if kk else notice.title, 'body':notice.body_kk if kk else notice.body},
                     'data':{'venue_id':notice.venue_id,'notification_id':notice.id,'kind':notice.kind},
-                    'android':{'notification':{'channel_id':'favorite_offers'}},
+                    'android':{'notification':{'channel_id':'partner_updates' if user.role == 'partner' else 'union_updates' if notice.kind == 'new_venue' else 'favorite_offers'}},
                     'apns':{'payload':{'aps':{'sound':'default'}}}}
                 work.append((delivery.id, message))
             db.commit()

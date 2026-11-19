@@ -1,4 +1,5 @@
 import copy
+import json
 from functools import lru_cache
 from typing import Literal
 import httpx
@@ -28,7 +29,7 @@ from . import session_events, catalog_cache, catalog_db
 from .middleware import Protection
 from .catalog_db import get_catalog_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from .notifications import offer_approved
+from .notifications import offer_approved, moderation_reviewed
 from .db import PushDevice, Notification
 from starlette.concurrency import run_in_threadpool
 from .db import (Audit, Favorite, LoginAttempt, Organization, Partner, Resource,
@@ -112,6 +113,16 @@ def resource_json(r, revision=None):
     return result
 
 
+def privilege_json(resource):
+    result = resource_json(resource)
+    if resource.kind == 'venue':
+        percent = resource.published.get('percent')
+        result['kind'] = 'offer'
+        result['data'] = {**resource.published, 'name': f'Клубная скидка {percent}%',
+                          'name_kk': f'Клубтық жеңілдік {percent}%'}
+    return result
+
+
 def revision_json(r):
     return dict(id=r.id, resource_id=r.resource_id, author_id=r.author_id, data=r.payload,
                 action=r.action, base_version=r.base_version, status=r.status,
@@ -135,10 +146,15 @@ def public_venues(db, user, venue_id=None, favorites_only=False):
                              *([Resource.id == venue_id] if venue_id else []),
                              *([Resource.id.in_(select(Favorite.venue_id).where(Favorite.user_id == user.id))]
                                if favorites_only else []))).all()
-    return [r for r in rows if active_data(r.published, user.organization_id)]
+    return [r for r in rows if active_data(
+        {k:v for k,v in r.published.items() if k not in ('starts_on','ends_on')}
+        if r.published.get('percent') is not None else r.published, user.organization_id)]
 
 
 def offers_for(db, user, venue_id):
+    venue = db.get(Resource, venue_id)
+    if venue and venue.published and venue.published.get('percent') is not None:
+        return [venue] if active_data(venue.published, user.organization_id) else []
     return [r for r in db.scalars(select(Resource).where(
         Resource.kind == 'offer', Resource.venue_id == venue_id,
         Resource.enabled.is_(True), Resource.deleted.is_(False),
@@ -176,6 +192,23 @@ def meta():
     return {'brand': 'QAZAQMETAL KÁSIPODAǴY', 'session_days': 30,
             'tiles': TILE_URL,
             'attribution': (os.getenv('MAP_ATTRIBUTION') or '© OpenStreetMap contributors · Tiles OSM France'), 'default_center': [52.287, 76.967], 'map_style': '/api/map-style', 'languages': ['ru', 'kk']}
+
+
+@app.get('/api/push-config')
+def push_config(request: Request, platform: Literal['android', 'ios'] = 'android'):
+    # Client metadata is public; never expose the server service-account document.
+    role = portal_role(request) or 'member'
+    if role not in ('member', 'partner'):
+        return {'enabled': False}
+    try:
+        value = json.loads(os.getenv('FIREBASE_CLIENT_CONFIG', '{}')).get(role, {}).get(platform, {})
+    except (ValueError, AttributeError):
+        return {'enabled': False}
+    fields = ('apiKey', 'appId', 'messagingSenderId', 'projectId', 'storageBucket', 'iosBundleId')
+    public = {key:value[key] for key in fields if isinstance(value.get(key), str)} if isinstance(value, dict) else {}
+    if not all(public.get(key) for key in fields[:4]):
+        return {'enabled': False}
+    return {'enabled': True, 'options': public}
 
 
 @app.post('/api/auth/login')
@@ -328,7 +361,7 @@ def catalog_page(q: str = '', category: str = '', favorites_only: bool = False, 
             if r.latitude is None or not (south <= r.latitude <= north and west <= r.longitude <= east):
                 continue
         result = resource_json(r)
-        result['offers'] = []
+        result['offers'] = [privilege_json(r)] if d.get('percent') is not None and active_data(d, user.organization_id) else []
         result['distance_km'] = None
         if latitude is not None and longitude is not None and r.latitude is not None:
             lat1, lat2 = math.radians(latitude), math.radians(r.latitude)
@@ -345,7 +378,7 @@ def catalog_page(q: str = '', category: str = '', favorites_only: bool = False, 
             Resource.enabled.is_(True), Resource.deleted.is_(False),
             Resource.published.is_not(None))).all()
         for offer in offers:
-            if active_data(offer.published, user.organization_id):
+            if by_id[offer.venue_id]['data'].get('percent') is None and active_data(offer.published, user.organization_id):
                 by_id[offer.venue_id]['offers'].append(resource_json(offer))
     response = JSONResponse({'items': page, 'total': len(results)})
     if cache_key is not None:
@@ -381,7 +414,10 @@ async def catalog(request: Request, q: str = '', category: str = '', favorites_o
 def catalog_detail(resource_id: str, user=Depends(member), db=Depends(get_db)):
     r = next(iter(public_venues(db, user, resource_id)), None)
     require(r)
-    return dict(**resource_json(r), offers=[resource_json(o) for o in offers_for(db, user, r.id)])
+    banners = db.scalars(select(Resource).where(Resource.kind == 'banner', Resource.venue_id == r.id,
+        Resource.enabled.is_(True), Resource.deleted.is_(False), Resource.published.is_not(None))).all()
+    return dict(**resource_json(r), offers=[privilege_json(o) for o in offers_for(db, user, r.id)],
+        banners=[resource_json(b) for b in banners if active_data(b.published, user.organization_id)])
 
 
 @app.get('/api/banners')
@@ -451,7 +487,7 @@ def scan(body: S.ScanIn, user=Depends(member), db=Depends(get_db)):
         return dict(**visit_json(last), replay=True)
     visit = Visit(request_id=body.request_id, user_id=user.id, organization_id=user.organization_id,
                   partner_id=venue.partner_id, venue_id=venue.id, offer_id=offer.id,
-                  venue_name=venue.published['name'], offer_name=offer.published['name'],
+                  venue_name=venue.published['name'], offer_name=privilege_json(offer)['data']['name'],
                   percent=offer.published['percent'])
     db.add(visit)
     db.flush()
@@ -485,10 +521,14 @@ def validate_payload(db, resource, payload):
     if resource.kind == 'venue':
         if not payload['address'] or not payload['category']:
             raise HTTPException(422, 'Для заведения нужны адрес и категория')
+        if payload.get('percent') is not None and not payload.get('terms'):
+            raise HTTPException(422, 'Укажите условия скидки')
     else:
         venue = require(db.get(Resource, resource.venue_id), 'Выберите заведение')
         if venue.kind != 'venue' or venue.partner_id != resource.partner_id:
             raise HTTPException(422, 'Неверное заведение')
+        if resource.kind == 'offer' and venue.published and venue.published.get('percent') is not None:
+            raise HTTPException(409, 'Скидку этого заведения нужно изменять в карточке заведения')
         if resource.kind == 'offer' and (not payload['percent'] or not payload['terms']):
             raise HTTPException(422, 'Для скидки нужны процент и условия')
         if resource.kind == 'banner' and not payload['image']:
@@ -580,6 +620,7 @@ def review(revision_id: str, body: S.ReviewIn, user=Depends(admin), db=Depends(g
     rev.reason = body.reason
     rev.moderator_id = user.id
     rev.reviewed_at = now()
+    moderation_reviewed(db, resource, rev)
     session_events.publish(db, 'catalog')
     audit(db, user, 'moderation_' + rev.status, resource.id, revision_id=rev.id, reason=body.reason)
     db.commit()

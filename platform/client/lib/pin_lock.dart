@@ -1,4 +1,5 @@
 import 'i18n.dart';
+import 'tab_pin.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
@@ -15,11 +16,13 @@ class PinLock extends StatefulWidget {
   final Api api;
   final Widget child;
   final bool biometricsAllowed;
+  final DateTime Function()? clock;
   const PinLock({
     super.key,
     required this.api,
     required this.child,
     this.biometricsAllowed = true,
+    this.clock,
   });
   @override
   State<PinLock> createState() => _PinLockState();
@@ -35,6 +38,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
       enabled = false,
       confirming = false;
   String? error;
+  DateTime? backgroundedAt;
   String get key => 'local-pin-${widget.api.user!['id']}';
   String hash(String salt, String value) =>
       sha256.convert(utf8.encode('$salt:$value')).toString();
@@ -55,6 +59,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
       if (!mounted) return;
       setState(() {
         creating = stored == null;
+        locked = stored == null || !isTabUnlocked('${widget.api.user!['id']}');
         loading = false;
       });
       if (!creating && enabled) await biometric();
@@ -70,26 +75,30 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (creating || loading) return;
-    if ((state == AppLifecycleState.inactive &&
-            !busy &&
-            !deviceAuthenticationActive) ||
-        state == AppLifecycleState.paused ||
+    if (creating || loading || deviceAuthenticationActive) return;
+    if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
-      if (mounted) {
-        setState(() {
-          locked = true;
-          pin.clear();
+      backgroundedAt ??= widget.clock?.call() ?? DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      final since = backgroundedAt;
+      backgroundedAt = null;
+      if (since != null &&
+          (widget.clock?.call() ?? DateTime.now()).difference(since) >=
+              const Duration(seconds: 30)) {
+        clearTabUnlock();
+        if (mounted) {
+          setState(() {
+            locked = true;
+            pin.clear();
+          });
+        }
+      }
+      if (locked && !busy) {
+        widget.api.storage.read(key: '$key-biometrics').then((value) {
+          enabled = !kIsWeb && value == 'yes';
+          if (enabled && mounted) biometric();
         });
       }
-    } else if (state == AppLifecycleState.resumed &&
-        locked &&
-        !busy &&
-        !deviceAuthenticationActive) {
-      widget.api.storage.read(key: '$key-biometrics').then((value) {
-        enabled = !kIsWeb && value == 'yes';
-        if (enabled && mounted) biometric();
-      });
     }
   }
 
@@ -99,6 +108,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
     try {
       await widget.api.get('/auth/me');
       if (!mounted || widget.api.user == null) return;
+      deviceAuthenticationActive = true;
       final ok = await biometrics.authenticate(
         localizedReason: tx('Подтвердите вход в QAZAQMETAL'),
         biometricOnly: true,
@@ -107,6 +117,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
       if (ok && mounted) {
         setState(() {
           locked = false;
+          rememberTabUnlock('${widget.api.user!['id']}');
           error = null;
         });
       }
@@ -115,6 +126,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
         setState(() => error = 'Биометрия недоступна. Введите PIN-код.');
       }
     } finally {
+      deviceAuthenticationActive = false;
       if (mounted) setState(() => busy = false);
     }
   }
@@ -197,7 +209,9 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
         if (mounted) {
           setState(() {
             creating = false;
+            confirming = false;
             locked = false;
+            rememberTabUnlock('${widget.api.user!['id']}');
           });
         }
       } else {
@@ -243,7 +257,12 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
         }
         await widget.api.storage.delete(key: '$key-attempts');
         await widget.api.storage.delete(key: '$key-blocked');
-        if (mounted) setState(() => locked = false);
+        if (mounted) {
+          setState(() {
+            locked = false;
+            rememberTabUnlock('${widget.api.user!['id']}');
+          });
+        }
       }
       pin.clear();
       confirmation.clear();
