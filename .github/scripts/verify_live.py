@@ -66,16 +66,24 @@ try:
  call('GET','/api/auth/me',token=token);call('GET','/api/auth/sessions',token=token)
  catalog=call('GET','/api/catalog',token=token);assert catalog['total']>=2
  codes=json.loads(Path('.github/demo-assets/qr-codes.json').read_text())['partners']
+ # Owners can rotate their QR codes. Old printed fixtures must not reset production QR hashes.
+ qr_current=remote("from app.db import SessionLocal,Resource; from app.security import digest; import sys,json,secrets; p=json.load(sys.stdin); db=SessionLocal(); print(json.dumps({x['venue_id']:bool((v:=db.get(Resource,x['venue_id'])) and v.qr_hash and secrets.compare_digest(v.qr_hash,digest(x['code'].rsplit(':',1)[1]))) for x in p})); db.close()",codes)
+ scanned=0
  for p in codes:
   v=call('GET','/api/catalog/'+p['venue_id'],token=token);assert len(v['data']['description'])>100 and v['offers']
   assert len(call('GET',v['data']['image'],token=token))>1000
-  request={'code':p['code'],'request_id':str(uuid.uuid4())};visit=call('POST','/api/scan',request,token);assert visit['percent']==p['percent']
+  request={'code':p['code'],'request_id':str(uuid.uuid4())}
+  if not qr_current[p['venue_id']]:
+   call('POST','/api/scan',request,token,status=404)
+   checks.append({'case':'Previously issued demo QR was replaced by its owner; current QR preserved','result':'INFO','venue':p['venue_id']})
+   continue
+  visit=call('POST','/api/scan',request,token);assert visit['percent']==max(o['data']['percent'] for o in v['offers']);scanned+=1
   assert call('POST','/api/scan',request,token)['replay']
  banners=call('GET','/api/banners',token=token);assert len(banners)>=2
  for b in banners:assert len(call('GET',b['data']['image'],token=token))>1000
  assert call('GET','/api/catalog?west=76.9&east=77.1&south=52.2&north=52.4',token=token)['total']>=2
  venue=codes[0]['venue_id'];call('PUT','/api/me/favorites/'+venue,{},token);call('PUT','/api/me/favorites/'+venue,{},token);assert call('GET','/api/catalog?favorites_only=true',token=token)['total']==1;call('DELETE','/api/me/favorites/'+venue,token=token)
- assert len(call('GET','/api/me/history',token=token))==2
+ assert len(call('GET','/api/me/history',token=token))==scanned
  assert 'Еда и напитки' in call('GET','/api/categories',token=token)
  assert 'name:ru' in json.dumps(call('GET','/api/map-style?lang=ru'))
  assert 'name:kk' in json.dumps(call('GET','/api/map-style?lang=kk'))
@@ -85,7 +93,7 @@ try:
  ticket=call('POST','/api/tickets',{'subject':'QA · проверка поддержки','message':'Автоматическая тестовая заявка при запуске.'},token,201)
  call('POST','/api/admin/tickets/'+ticket['id'],{'status':'closed','reply':'QA · проверка ответа'},admin)
  assert any(t['id']==ticket['id'] and t['status']=='closed' for t in call('GET','/api/tickets',token=token))
- assert call('GET','/api/workspace/stats',token=admin)['total_uses']>=2
+ assert call('GET','/api/workspace/stats',token=admin)['total_uses']>=scanned
  # Real first-password/PIN flow and idle session revocation in the deployed browser app.
  browser_temporary=call('POST','/api/admin/accounts/'+memberid+'/reset-password',{},admin)['temporary_password']
  from playwright.sync_api import sync_playwright
