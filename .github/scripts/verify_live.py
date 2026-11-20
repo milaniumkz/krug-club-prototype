@@ -99,7 +99,7 @@ try:
  from playwright.sync_api import sync_playwright
  with sync_playwright() as pw:
   executable=shutil.which('google-chrome') or shutil.which('chromium')
-  browser=pw.chromium.launch(executable_path=executable,args=['--no-sandbox','--disable-dev-shm-usage'])
+  browser=pw.chromium.launch(executable_path=executable,args=['--no-sandbox','--disable-dev-shm-usage'],ignore_default_args=['--disable-background-networking'])
   ctx=browser.new_context(viewport={'width':390,'height':844},permissions=['geolocation','notifications'],geolocation={'latitude':52.287,'longitude':76.967})
   page=ctx.new_page();page.set_default_timeout(15000)
   push_http=[]; push_csp=[]; push_failures=[]
