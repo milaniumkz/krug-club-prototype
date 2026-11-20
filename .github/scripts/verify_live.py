@@ -193,6 +193,15 @@ try:
    assert not push_csp, 'Firebase SDK blocked by CSP'
    assert not any(x['status']>=400 and x['host'] in ('firebaseinstallations.googleapis.com','fcmregistrations.googleapis.com','fcm.googleapis.com') for x in push_http), 'Firebase browser registration returned an HTTP error'
    checks.append({'case':'Headless Chrome did not provide an FCM token; real-device delivery still requires physical test','result':'INFO','firebase_http':push_http,'firebase_network_failures':push_failures,'worker_states':worker_states})
+  page.get_by_role('button',name='Уведомления',exact=True).click();page.wait_for_timeout(700)
+  connect=page.get_by_role('button',name=re.compile('^(Включить уведомления|Проверить подключение)$'))
+  connect.wait_for()
+  for width in (320,390):
+   page.set_viewport_size({'width':width,'height':844});page.wait_for_timeout(400)
+   assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+   page.screenshot(path=str(out/('notifications-'+str(width)+'.png')))
+  if connect.is_enabled():connect.click();page.wait_for_timeout(1000)
+  checks.append({'case':'Notification permission/retry button and inbox at 320/390px','result':'PASS'})
   page.get_by_role('tab',name='Профиль',exact=True).click();page.wait_for_timeout(500)
   # The real Logout UI must end the PIN lifecycle; credential login must create it again.
   for _ in range(8):
