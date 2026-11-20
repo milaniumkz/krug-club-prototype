@@ -1,0 +1,23 @@
+name: Deliver QMET+ 2.4.0 files
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Verify and publish complete testing files
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qmetplus-2.4.0-2026-11-20 --pattern 'qmet240.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 28
+          cat parts/qmet240.part.??? > delivery.zip
+          echo '978d580a80e2d3bb9d8bfb8e3a68434b19e43cac43135a55511ebb2294f8fe4a  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check checksums.sha256
+          gh release upload qmetplus-2.4.0-2026-11-20 QMETplus_full_project.zip QMETplus_Android_debug.apk QMETplus_Partner_debug.apk QMETplus_demo_assets.zip checksums.sha256 --clobber
