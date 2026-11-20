@@ -65,6 +65,13 @@ try:
  personal='qa'+secrets.token_hex(2);changed=call('POST','/api/auth/password',{'old_password':temp,'new_password':personal},token);token=changed['token'];assert not changed['user']['must_change_password']
  call('GET','/api/auth/me',token=token);call('GET','/api/auth/sessions',token=token)
  assert call('GET','/api/meta')['brand']=='QMET+'
+ config=call('GET','/api/app-config');assert config['schema_version']==1 and config['settings']['brand_name']=='QMET+'
+ cached=client.get(BASE+'/api/app-config',headers={'If-None-Match':config['etag']});assert cached.status_code==304
+ checks.append({'case':'Remote configuration conditional cache','http_status':304,'result':'PASS'})
+ admin_config=call('GET','/api/admin/app-config',token=admin);assert admin_config['revision']==config['revision']
+ call('GET','/api/admin/app-config',token=token,status=403)
+ assert 'QMET+' in call('GET','/privacy').decode()
+ assert len(call('GET','/terms?lang=kk'))>100
  catalog=call('GET','/api/catalog',token=token);assert catalog['total']>=2
  codes=json.loads(Path('.github/demo-assets/qr-codes.json').read_text())['partners']
  # Owners can rotate their QR codes. Old printed fixtures must not reset production QR hashes.
@@ -133,6 +140,15 @@ try:
    page.get_by_text('Обзор',exact=True).first.wait_for()
    checks.append({'case':role+' portal opens after browser reload without PIN','result':'PASS'})
    page.screenshot(path=str(out/('staff-'+role+'.png')))
+   if role=='admin':
+    page.get_by_text('Настройки приложения',exact=True).first.click();page.wait_for_timeout(700)
+    page.get_by_role('button',name='Сохранить настройки',exact=True).first.wait_for()
+    for settings_width in (390,320):
+     page.set_viewport_size({'width':settings_width,'height':844});page.wait_for_timeout(500)
+     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+     page.screenshot(path=str(out/('app-settings-'+str(settings_width)+'.png')))
+     checks.append({'case':'Remote settings editor '+str(settings_width)+'px','result':'PASS'})
+    page.goto(origin);enable();page.get_by_text('Обзор',exact=True).first.wait_for()
    for width in (390,320):
     page.set_viewport_size({'width':width,'height':844});page.wait_for_timeout(700)
     page.get_by_text('Обзор',exact=True).first.wait_for()
