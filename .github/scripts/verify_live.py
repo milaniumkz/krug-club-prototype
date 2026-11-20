@@ -188,9 +188,11 @@ try:
    checks.append({'case':'Real Chrome FCM registration, worker delivery and foreground reception','result':'PASS'})
    page.screenshot(path=str(out/'real-web-push.png'))
   else:
+   worker_states=page.evaluate("async()=> (await navigator.serviceWorker.getRegistrations()).filter(r=>r.scope.includes('firebase-cloud-messaging-push-scope')).map(r=>r.active?.state || r.installing?.state || 'inactive')")
+   assert 'activated' in worker_states, 'Firebase service worker was not activated'
    assert not push_csp, 'Firebase SDK blocked by CSP'
    assert not any(x['status']>=400 and x['host'] in ('firebaseinstallations.googleapis.com','fcmregistrations.googleapis.com','fcm.googleapis.com') for x in push_http), 'Firebase browser registration returned an HTTP error'
-   checks.append({'case':'Headless Chrome did not provide an FCM token; real-device delivery still requires physical test','result':'INFO','firebase_http':push_http,'firebase_network_failures':push_failures})
+   checks.append({'case':'Headless Chrome did not provide an FCM token; real-device delivery still requires physical test','result':'INFO','firebase_http':push_http,'firebase_network_failures':push_failures,'worker_states':worker_states})
   page.get_by_role('tab',name='Профиль',exact=True).click();page.wait_for_timeout(500)
   # The real Logout UI must end the PIN lifecycle; credential login must create it again.
   for _ in range(8):
