@@ -1,6 +1,7 @@
 """Publish only reviewed public HTML; preserve application and database state."""
 import base64
 import hashlib
+import json
 import os
 from pathlib import Path
 import secrets
@@ -44,6 +45,33 @@ try:
                 sftp.chmod(remote + '.new', 0o644)
                 sftp.posix_rename(remote + '.new', remote)
     command('cd /opt/qazaqmetal/current && docker compose cp web/legal api:/web/')
+    patch = {'support_email': 'milaniumkz@yandex.kz', 'support_phone': '+77086362153',
+             'support_url': 'https://qazaqmetal.109.235.119.144.sslip.io/legal/support.html'}
+    # Lock and merge three public contact fields; preserve all owner settings.
+    code = """
+from app.db import SessionLocal, AppSetting, Audit, now
+from app.app_config import KEY, Settings
+from app import session_events
+from sqlalchemy import select
+import json
+patch = json.loads(PATCH)
+with SessionLocal() as db:
+    row = db.scalar(select(AppSetting).where(AppSetting.key == KEY).with_for_update())
+    if row is None:
+        row = AppSetting(key=KEY, data={}, revision=0)
+        db.add(row)
+    changed = [k for k, v in patch.items() if row.data.get(k) != v]
+    if changed:
+        row.data = Settings.model_validate({**row.data, **patch}).model_dump()
+        row.revision += 1
+        row.updated_at = now()
+        db.add(Audit(actor_id=None, action='app_settings_changed', target=KEY,
+                     detail={'revision': row.revision, 'changed_fields': changed, 'source': 'public_contact_deployment'}))
+        session_events.publish(db, 'catalog')
+        db.commit()
+print('Public support settings synchronized')
+""".replace('PATCH', repr(json.dumps(patch)))
+    print(command('cd /opt/qazaqmetal/current && docker compose exec -T api python -c ' + shlex.quote(code)))
     print('Published public pages; application services were not restarted.')
 finally:
     transport.close()

@@ -1,6 +1,7 @@
 """Build an independently installable partner app without modifying the member project."""
 
 import argparse, pathlib, plistlib, shutil, subprocess
+from urllib.parse import urlsplit
 
 p = argparse.ArgumentParser()
 p.add_argument("--platform", choices=["android", "ios"], default="android")
@@ -8,7 +9,15 @@ p.add_argument("--mode", choices=["debug", "release"], default="debug")
 p.add_argument("--prepare-only", action="store_true")
 p.add_argument("--android-signing-file", type=pathlib.Path)
 p.add_argument("--output", type=pathlib.Path)
+p.add_argument('--bundle', action='store_true', help='Build signed Android App Bundle')
+p.add_argument('--ipa', action='store_true', help='Build signed iOS App Store archive')
+p.add_argument('--api-base-url', default='https://qazaqmetalpartners.109.235.119.144.sslip.io')
 a = p.parse_args()
+if a.bundle and a.platform != 'android':p.error('--bundle requires Android')
+if a.ipa and a.platform != 'ios':p.error('--ipa requires iOS')
+url = urlsplit(a.api_base_url)
+if url.scheme != 'https' or not url.hostname or url.hostname in ('localhost', '127.0.0.1', '10.0.2.2') or url.username or url.password or url.path not in ('', '/') or url.query or url.fragment:
+    p.error('A public HTTPS API origin is required')
 root = pathlib.Path(__file__).resolve().parents[1]
 out = (a.output or root / "client/build/partner-app").resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -77,17 +86,21 @@ if a.prepare_only:
 command = [
     "flutter",
     "build",
-    "apk" if a.platform == "android" else "ios",
+    ('appbundle' if a.bundle else 'apk') if a.platform == 'android' else ('ipa' if a.ipa else 'ios'),
     "--" + a.mode,
     "--dart-define=PORTAL=partner",
-    "--dart-define=API_BASE_URL=https://qazaqmetalpartners.109.235.119.144.sslip.io",
+    '--dart-define=API_BASE_URL=' + a.api_base_url.rstrip('/'),
 ]
-if a.platform == "ios":
+if a.platform == "ios" and not a.ipa:
     command.append("--no-codesign")
 subprocess.run(command, cwd=target, check=True)
 if a.platform == "android":
-    result = out / ("QazaqMetal_Partner_" + a.mode + ".apk")
-    shutil.copy2(target / f"build/app/outputs/flutter-apk/app-{a.mode}.apk", result)
+    result = out / ('QMETplus_Partner_' + a.mode + ('.aab' if a.bundle else '.apk'))
+    artifact = target / (f'build/app/outputs/bundle/{a.mode}/app-{a.mode}.aab' if a.bundle else f'build/app/outputs/flutter-apk/app-{a.mode}.apk')
+    shutil.copy2(artifact, result)
+elif a.ipa:
+    result = out / 'ipa'
+    shutil.copytree(target / 'build/ios/ipa', result, dirs_exist_ok=True)
 else:
     result = out / "QazaqMetal_Partner_iOS_unsigned.zip"
     subprocess.run(
