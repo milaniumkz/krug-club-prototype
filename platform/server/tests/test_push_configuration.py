@@ -6,6 +6,7 @@ from conftest import login
 
 def test_web_config_whitelist_worker_and_role_isolation(world, monkeypatch):
     c, _, _ = world
+    monkeypatch.setenv('MEMBER_HOST','testserver')
     monkeypatch.setenv('PARTNER_HOST','qazaqmetalpartners.109.235.119.144.sslip.io')
     monkeypatch.setenv('ADMIN_HOST','qazaqmetaladmin.109.235.119.144.sslip.io')
     options={'apiKey':'public','appId':'web-app','messagingSenderId':'123','projectId':'test','authDomain':'test.firebaseapp.com','private_key':'MUST_NOT_LEAK'}
