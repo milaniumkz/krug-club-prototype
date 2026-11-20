@@ -48,7 +48,7 @@ gradle.write_text(s)
 manifest = target / "android/app/src/main/AndroidManifest.xml"
 manifest.write_text(
     manifest.read_text()
-    .replace('android:label="QAZAQMETAL"', 'android:label="QAZAQMETAL Партнёр"')
+    .replace('android:label="QMET+"', 'android:label="QMET+ Партнёр"')
     .replace(
         'android:name=".MainActivity"',
         'android:name="kz.qazaqmetal.qazaqmetal.MainActivity"',
@@ -63,8 +63,8 @@ pbx.write_text(
 info = target / "ios/Runner/Info.plist"
 with info.open("rb") as f:
     data = plistlib.load(f)
-data["CFBundleDisplayName"] = "QAZAQMETAL Партнёр"
-data["CFBundleName"] = "qzm_partner"
+data["CFBundleDisplayName"] = "QMET+ Партнёр"
+data["CFBundleName"] = "qmetplus_partner"
 with info.open("wb") as f:
     plistlib.dump(data, f)
 from configure_firebase_native import configure

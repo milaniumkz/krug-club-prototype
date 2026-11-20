@@ -308,8 +308,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       r'^QAZAQMETAL:1:[a-f0-9-]{36}:[A-Za-z0-9_-]{32,64}$',
     ).hasMatch(raw)) {
       setState(
-        () => error =
-            'QR не относится к заведению QAZAQMETAL. Ссылки не открываются',
+        () =>
+            error = 'QR не относится к заведению QMET+. Ссылки не открываются',
       );
       return;
     }

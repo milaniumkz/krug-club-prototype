@@ -961,10 +961,10 @@ class _QrPrintPageState extends State<QrPrintPage> {
             XFile.fromData(
               bytes.buffer.asUint8List(),
               mimeType: 'image/png',
-              name: 'QazaqMetal_QR.png',
+              name: 'QMETplus_QR.png',
             ),
           ],
-          fileNameOverrides: ['QazaqMetal_QR.png'],
+          fileNameOverrides: ['QMETplus_QR.png'],
           sharePositionOrigin: origin,
           downloadFallbackEnabled: true,
         ),
@@ -1018,7 +1018,7 @@ class _QrPrintPageState extends State<QrPrintPage> {
                             ),
                           ),
                           const AppText(
-                            'Отсканируйте в приложении QAZAQMETAL, чтобы получить скидку',
+                            'Отсканируйте в приложении QMET+, чтобы получить скидку',
                             style: TextStyle(
                               color: ink,
                               fontSize: 13,

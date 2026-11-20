@@ -110,7 +110,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
       if (!mounted || widget.api.user == null) return;
       deviceAuthenticationActive = true;
       final ok = await biometrics.authenticate(
-        localizedReason: tx('Подтвердите вход в QAZAQMETAL'),
+        localizedReason: tx('Подтвердите вход в QMET+'),
         biometricOnly: true,
         persistAcrossBackgrounding: true,
       );

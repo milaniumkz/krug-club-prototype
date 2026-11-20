@@ -267,7 +267,7 @@ class ClubCard extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: AppText(
-                            'QAZAQMETAL',
+                            'QMET+',
                             style: titleStyle(26).copyWith(letterSpacing: 2),
                           ),
                         ),
@@ -1186,7 +1186,7 @@ class ProfilePage extends StatelessWidget {
       }),
       const SizedBox(height: 16),
       const AppText(
-        'QAZAQMETAL KÁSIPODAǴY\nПривилегии только для членов профсоюза',
+        'QMET+\nПривилегии только для членов профсоюза',
         style: TextStyle(color: muted, fontSize: 12),
         textAlign: TextAlign.center,
       ),

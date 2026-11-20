@@ -38,7 +38,7 @@ from .security import (COOKIE, DUMMY_HASH, PRODUCTION, admin, current_user, dige
                        hash_password, issue_session, manager, member, new_password,
                        ready_user, user_json, verify_password, portal_role)
 
-app = FastAPI(title='QAZAQMETAL KÁSIPODAǴY API', version='1.0.0',
+app = FastAPI(title='QMET+ API', version='1.0.0',
               docs_url=None if PRODUCTION else '/api/docs', redoc_url=None,
               openapi_url='/api/openapi.json')
 app.add_event_handler('startup', session_events.start)
@@ -189,7 +189,7 @@ def map_style(lang: Literal['ru', 'kk'] = 'ru'):
 
 @app.get('/api/meta')
 def meta():
-    return {'brand': 'QAZAQMETAL KÁSIPODAǴY', 'session_days': 30,
+    return {'brand': 'QMET+', 'session_days': 30,
             'tiles': TILE_URL,
             'attribution': (os.getenv('MAP_ATTRIBUTION') or '© OpenStreetMap contributors · Tiles OSM France'), 'default_center': [52.287, 76.967], 'map_style': '/api/map-style', 'languages': ['ru', 'kk']}
 
@@ -485,7 +485,7 @@ def scan(body: S.ScanIn, user=Depends(member), db=Depends(get_db)):
         return dict(**visit_json(previous), replay=True)
     match = re.fullmatch(r'QAZAQMETAL:1:([a-f0-9-]{36}):([A-Za-z0-9_-]{32,64})', body.code)
     if not match:
-        raise HTTPException(400, 'Это не QR-код заведения QAZAQMETAL. Ссылки не открываются')
+        raise HTTPException(400, 'Это не QR-код заведения QMET+. Ссылки не открываются')
     venue = db.scalar(select(Resource).where(Resource.id == match[1]).with_for_update(read=True))
     if not venue or venue.kind != 'venue' or not venue.qr_hash or not secrets.compare_digest(venue.qr_hash, digest(match[2])):
         raise HTTPException(404, 'QR-код неизвестен или заменён. Попросите актуальный код')

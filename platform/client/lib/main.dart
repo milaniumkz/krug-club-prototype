@@ -53,7 +53,7 @@ class QazaqMetalApp extends StatelessWidget {
     listenable: Listenable.merge([api, appLanguage]),
     builder: (context, _) => MaterialApp(
       key: ValueKey(api.user?['id'] ?? 'guest'),
-      title: 'QAZAQMETAL KÁSIPODAǴY',
+      title: 'QMET+',
       scaffoldMessengerKey: appMessenger,
       debugShowCheckedModeBanner: false,
       locale: Locale(appLanguage.code),

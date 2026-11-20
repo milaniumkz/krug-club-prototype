@@ -22,13 +22,29 @@ class Brand extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      ClipOval(child: Image.asset('assets/logo.png', width: 38, height: 38)),
+      Container(
+        width: 38,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: purple,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Q+',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 19,
+          ),
+        ),
+      ),
       const SizedBox(width: 10),
       const Expanded(
         child: AppText(
-          'QAZAQMETAL\nKÁSIPODAǴY',
+          'QMET+',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 22,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.2,
           ),

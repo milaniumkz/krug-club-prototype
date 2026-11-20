@@ -26,6 +26,10 @@ final appLanguage = AppLanguage();
 final _patterns = <MapEntry<RegExp, String>>[];
 String tx(String? value) {
   if (value == null) return '';
+  value = value
+      .replaceAll('QAZAQMETAL KÁSIPODAǴY', 'QMET+')
+      .replaceAll('QAZAQMETAL', 'QMET+')
+      .replaceAll('КазахМетал', 'QMET+');
   if (appLanguage.code == 'ru') return value;
   final exact = kkTranslations[value];
   if (exact != null) return exact;

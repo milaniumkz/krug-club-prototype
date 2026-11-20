@@ -7,11 +7,12 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
-        android:label="QAZAQMETAL"
+        android:label="QMET+"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
         android:name="${applicationName}"
-        android:icon="@drawable/ic_qazaqmetal">
+        android:icon="@drawable/ic_qmetplus">
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_qmetplus"/>
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="union_updates"/>
         <activity
             android:name=".MainActivity"

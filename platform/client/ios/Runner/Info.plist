@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>QAZAQMETAL</string>
+	<string>QMET+</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>qazaqmetal</string>
+	<string>QMETplus</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -29,7 +29,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Камера нужна для считывания QR-кода заведения и получения скидки.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Быстрый защищённый вход в QAZAQMETAL после настройки PIN-кода.</string>
+	<string>Быстрый защищённый вход в QMET+ после настройки PIN-кода.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Местоположение нужно, чтобы показать ближайшие заведения на карте.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
