@@ -10,7 +10,7 @@ One Firebase project (`qazaqmetal-8a77b`), independent member/partner registrati
 - Public `/api/push-config` selects role from the portal host and platform from `android|ios|web`. Admin is disabled. `/api/push-config.js` exposes only whitelisted web-client metadata for the service worker.
 - Lazy SDK loader: `firebase-loader.js` loads modular SDK12.12.0 without inline script injection; CSP remains strict.
 - Firebase service worker: `/firebase-messaging-sw.js`, same-origin pinned Firebase compat12.12.0 libraries. Background messages use FCM standard display, one notification per delivery; clicks use a server-generated same-origin HTTPS link. Foreground messages show an in-app notification.
-- The Firebase SDK is pinned to stable Firebase Messaging16/core4, using classic FCM registration tokens compatible with the HTTPv1 sender.
+- The Firebase SDK is pinned to Firebase Messaging16.7.0/core4.14.0 (native Apple SDK12.18.0), using classic FCM registration tokens compatible with the HTTPv1 sender.
 
 ## Audiences
 
@@ -27,7 +27,7 @@ Sign in and open **Notifications → Enable notifications**, then allow in the b
 
 ## iOS
 
-Both native plists and push entitlements are included. On 20 November 2026 the owner authorized APNs setup: Production key `MT77FK8XQV` and Sandbox key `JAFWDRF56V`, team `Z3NZN92Y7P`. Both keys are topic-specific and restricted to `kz.qazaqmetal.qazaqmetal` and `kz.qazaqmetal.qazaqmetal.partner`; the correct keys were uploaded to both Firebase iOS registrations. Private P8 files remain outside Git. Signed build 20 was verified with production APNs entitlements. Build 21 replaces the app icons with the original QAZAQMETAL logo. Delivery on a physical iPhone remains an explicit verification step; configuration alone does not prove receipt.
+Both native plists and push entitlements are included. On 20 November 2026 the owner authorized APNs setup: Production key `MT77FK8XQV` and Sandbox key `JAFWDRF56V`, team `Z3NZN92Y7P`. Both keys are topic-specific and restricted to `kz.qazaqmetal.qazaqmetal` and `kz.qazaqmetal.qazaqmetal.partner`; the correct keys were uploaded to both Firebase iOS registrations. Private P8 files remain outside Git. Signed builds 21 and 22 were verified with production APNs entitlements. Build 21 replaces the app icons with the original QAZAQMETAL logo. Physical testing of build21 exposed a blocked initial-message lookup before permission registration. Build22 configures the Firebase notification delegate for UIScene, upgrades the messaging plugin, and prevents launch-message discovery from blocking registration. A regression test verifies first-launch permission and token registration with a stalled initial-message response. Delivery on a physical iPhone remains an explicit verification step; configuration alone does not prove receipt.
 
 ## Verification
 
