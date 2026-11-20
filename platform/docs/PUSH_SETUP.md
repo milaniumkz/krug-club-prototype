@@ -31,6 +31,8 @@ Both native plists and push entitlements are included. On 20 November 2026 the o
 
 ## Verification
 
+On 20 November 2026 both TestFlight build22 apps were installed on the owner's iPhone 11 Pro Max. Both requested notification permission and registered one active iOS device each. A scoped workflow queued one isolated store-review push per role; the owner confirmed receipt of both background notifications in chat. Partner FCM delivery was also verified as `sent` on the first attempt with no error. Local evidence is in ignored `output/releases/push-verification22.json`; no real-user broadcast was used.
+
 Run server PostgreSQL tests (including audience isolation, account-switch token ownership, worker payloads, whitelisted config and web worker configuration), Flutter analyze/test, Android member and partner builds, and macOS iOS unsigned CI. Then verify production OAuth, worker uptime, config and browser registration. Final lock-screen/background delivery must be checked on physical devices; no emulator/mock permission substitutes for it.
 
 The encrypted one-time handoff workflow is an installation helper, not a permanent secret store. The temporary private wrapping key is deleted after successful activation; public ciphertext cannot be used to retrieve the service-account key. Future key rotations should repeat a new encrypted handoff or use repository Secrets if write permissions become available.
