@@ -73,7 +73,7 @@ class PushService extends ChangeNotifier {
             iosBundleId: d['iosBundleId'] as String?,
             authDomain: d['authDomain'] as String?,
           ),
-        );
+        ).timeout(const Duration(seconds: 20));
         initialized = true;
       }
       if (!await FirebaseMessaging.instance.isSupported()) {
@@ -103,14 +103,26 @@ class PushService extends ChangeNotifier {
             pendingOpen = true;
           }
         });
-        final initial = await FirebaseMessaging.instance.getInitialMessage();
-        if (initial != null) api.openNotifications();
+        // Launch-message discovery must never block permission/token setup.
+        unawaited(
+          FirebaseMessaging.instance
+              .getInitialMessage()
+              .timeout(const Duration(seconds: 15))
+              .then<void>((initial) {
+                if (initial != null && api.user?['id'] == owner) {
+                  api.openNotifications();
+                }
+              }, onError: (Object _) {}),
+        );
       }
       var permission = await FirebaseMessaging.instance
-          .getNotificationSettings();
+          .getNotificationSettings()
+          .timeout(const Duration(seconds: 15));
       if (permission.authorizationStatus == AuthorizationStatus.notDetermined &&
           (!kIsWeb || requestPermission)) {
-        permission = await FirebaseMessaging.instance.requestPermission();
+        permission = await FirebaseMessaging.instance
+            .requestPermission()
+            .timeout(const Duration(seconds: 45));
       }
       if (permission.authorizationStatus == AuthorizationStatus.denied) {
         status = 'Разрешите уведомления в настройках устройства или браузера';
@@ -127,14 +139,17 @@ class PushService extends ChangeNotifier {
               sound: true,
             );
         if (platform == 'ios' &&
-            await FirebaseMessaging.instance.getAPNSToken() == null) {
+            await FirebaseMessaging.instance.getAPNSToken().timeout(
+                  const Duration(seconds: 15),
+                ) ==
+                null) {
           status = 'Push для iOS будет доступен после подключения APNs';
           return;
         }
       }
-      final token = await FirebaseMessaging.instance.getToken(
-        vapidKey: vapidKey,
-      );
+      final token = await FirebaseMessaging.instance
+          .getToken(vapidKey: vapidKey)
+          .timeout(const Duration(seconds: 20));
       if (token == null || api.user?['id'] != owner) return;
       final key = '$owner:${appLanguage.code}:$token';
       if (registered != key) {

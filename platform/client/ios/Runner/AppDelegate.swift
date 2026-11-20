@@ -1,4 +1,5 @@
 import FirebaseCore
+import firebase_messaging
 import Flutter
 import UIKit
 
@@ -8,6 +9,7 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    FLTFirebaseMessagingPlugin.configureNotificationCenterDelegate()
     if FirebaseApp.app() == nil { FirebaseApp.configure() }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
