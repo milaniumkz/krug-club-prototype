@@ -2,6 +2,7 @@
 import hashlib
 import re
 import json
+import os
 from pathlib import Path
 import plistlib
 import subprocess
@@ -32,17 +33,29 @@ for role, prefix in [('member', 'QMETplus'), ('partner', 'QMETplus_Partner')]:
         assert entitlements['com.apple.developer.team-identifier'] == 'Z3NZN92Y7P'
         report.append({'file': filename, 'bundle_id': expected, 'version': version, 'build': int(build),
                        'apns_environment': 'production', 'signature_verified': True})
-for path in sorted(out.glob(f'*_{version}_{build}.aab')):
+properties = Path.home() / '.codex/private/qmet-store/key.properties'
+signing = dict(line.split('=', 1) for line in properties.read_text().splitlines() if '=' in line)
+keytool = '/opt/homebrew/opt/openjdk@17/bin/keytool'
+certificate = subprocess.run([keytool, '-list', '-v', '-keystore', signing['storeFile'],
+                              '-alias', signing['keyAlias'], '-storepass:env', 'QMET_VERIFY_PASSWORD'],
+                             env={**os.environ, 'QMET_VERIFY_PASSWORD': signing['storePassword']},
+                             capture_output=True, text=True, check=True).stdout
+fingerprint = re.search(r'SHA256:\s*(\S+)', certificate).group(1)
+for prefix in ('QMETplus', 'QMETplus_Partner'):
+    path = out / f'{prefix}_{version}_{build}.aab'
     java = Path('/opt/homebrew/opt/openjdk@17/bin/jarsigner')
     check = subprocess.run([str(java) if java.exists() else 'jarsigner', '-verify', str(path)], capture_output=True)
     assert check.returncode == 0, 'Invalid AAB signature: ' + path.name
+    signer = subprocess.run([keytool, '-printcert', '-jarfile', str(path)],
+                            capture_output=True, text=True, check=True).stdout
+    assert fingerprint in signer, 'Unexpected or absent Android signing certificate: ' + path.name
     with zipfile.ZipFile(path) as archive:
         manifest = archive.read('base/manifest/AndroidManifest.xml')
         expected = b'kz.qazaqmetal.qazaqmetal' + (b'.partner' if 'Partner' in path.name else b'')
         assert expected in manifest
         if 'Partner' not in path.name:
             assert b'kz.qazaqmetal.qazaqmetal.partner' not in manifest
-    report.append({'file': path.name, 'signature_verified': True})
+    report.append({'file': path.name, 'signature_verified': True, 'signer_sha256': fingerprint})
 for path in sorted(out.iterdir()):
     if path.suffix in ('.ipa', '.aab') and path.stem.endswith(f'_{version}_{build}'):
         report.append({'file': path.name, 'bytes': path.stat().st_size,
