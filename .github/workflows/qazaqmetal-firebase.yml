@@ -1,0 +1,33 @@
+name: Configure authorized Firebase push services
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [prepare, install]
+        default: prepare
+permissions:
+  contents: read
+concurrency:
+  group: qazaqmetal-production-deploy
+  cancel-in-progress: false
+jobs:
+  firebase:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install paramiko==4.0.0
+      - name: Configure through verified SSH without disclosing credentials
+        env:
+          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          SETUP_MODE: ${{ inputs.mode }}
+        run: python .github/scripts/firebase_setup.py "$SETUP_MODE"
+      - uses: actions/upload-artifact@v4
+        if: inputs.mode == 'prepare'
+        with:
+          name: firebase-handoff-public
+          path: firebase-setup-public/handoff-public.pem
