@@ -40,6 +40,16 @@ def command(value, input_data=None):
     return output
 
 try:
+    if '--push-check' in sys.argv:
+        with paramiko.SFTPClient.from_transport(transport) as sftp:
+            sftp.put('.github/scripts/check_store_push.py', '/opt/qazaqmetal/incoming/check_store_push.py')
+        command('cd /opt/qazaqmetal/current && docker compose cp /opt/qazaqmetal/incoming/check_store_push.py api:/tmp/check_store_push.py')
+        try:
+            payload = json.dumps({'role': os.environ['REVIEW_ROLE'], 'operation': os.environ['PUSH_OPERATION']}).encode()
+            print(command('cd /opt/qazaqmetal/current && docker compose exec -T api python /tmp/check_store_push.py', payload))
+        finally:
+            command('cd /opt/qazaqmetal/current && docker compose exec -T -u 0 api rm /tmp/check_store_push.py')
+        raise SystemExit(0)
     if '--review-accounts' in sys.argv:
         with paramiko.SFTPClient.from_transport(transport) as sftp:
             sftp.put('.github/scripts/seed_store_review.py', '/opt/qazaqmetal/incoming/seed_store_review.py')

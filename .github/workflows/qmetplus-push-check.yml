@@ -1,0 +1,34 @@
+name: Check isolated QMET iPhone push
+on:
+  workflow_dispatch:
+    inputs:
+      role:
+        type: choice
+        options: [member, partner]
+        required: true
+      operation:
+        type: choice
+        options: [inspect, push]
+        default: inspect
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: qazaqmetal-production-deploy
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install paramiko==4.0.0
+      - name: Check only the isolated review iOS device
+        env:
+          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          REVIEW_ROLE: ${{ inputs.role }}
+          PUSH_OPERATION: ${{ inputs.operation }}
+        run: python .github/scripts/publish_legal.py --push-check
