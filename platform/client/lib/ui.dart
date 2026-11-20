@@ -41,26 +41,22 @@ class Brand extends StatelessWidget {
               cacheWidth: 76,
               cacheHeight: 76,
               fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Icon(Icons.auto_awesome_rounded),
+              errorBuilder: (_, _, _) => Image.asset(
+                'assets/qmetplus_icon.png',
+                width: 38,
+                height: 38,
+                fit: BoxFit.contain,
+              ),
             ),
           )
         else
-          Container(
+          Image.asset(
+            'assets/qmetplus_icon.png',
             width: 38,
             height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: purple,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              'Q+',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 19,
-              ),
-            ),
+            cacheWidth: 76,
+            cacheHeight: 76,
+            fit: BoxFit.contain,
           ),
         const SizedBox(width: 10),
         const Expanded(

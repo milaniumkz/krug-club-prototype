@@ -12,6 +12,7 @@ credentials*.json
 
 # Local dependencies, editors and operating systems
 node_modules/
+/output/
 .venv/
 __pycache__/
 .DS_Store

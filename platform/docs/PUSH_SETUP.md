@@ -27,7 +27,7 @@ Sign in and open **Notifications → Enable notifications**, then allow in the b
 
 ## iOS
 
-Both configurations are prepared, native plist and push entitlement included. APNs is deferred by owner instruction. Actual native iOS delivery requires APNs auth key uploaded in Firebase, Push Notifications capability, correct signed provisioning profile and physical-device testing. Do not claim native iOS pushes delivered until that is done.
+Both native plists and push entitlements are included. On 20 November 2026 the owner authorized APNs setup: Production key `MT77FK8XQV` and Sandbox key `JAFWDRF56V`, team `Z3NZN92Y7P`. Both keys are topic-specific and restricted to `kz.qazaqmetal.qazaqmetal` and `kz.qazaqmetal.qazaqmetal.partner`; the correct keys were uploaded to both Firebase iOS registrations. Private P8 files remain outside Git. Signed build 20 was verified with production APNs entitlements. Build 21 replaces the app icons with the original QAZAQMETAL logo. Delivery on a physical iPhone remains an explicit verification step; configuration alone does not prove receipt.
 
 ## Verification
 

@@ -24,8 +24,10 @@ class AppStore:
         self.session = requests.Session()
         self.session.headers.update(Authorization='Bearer ' + token.decode())
 
-    def request(self, method, path, **kwargs):
-        response = self.session.request(method, 'https://api.appstoreconnect.apple.com/v1/' + path.lstrip('/'), timeout=90, **kwargs)
+    def request(self, method, path, version='v1', **kwargs):
+        if version not in ('v1', 'v2'):
+            raise ValueError('Unsupported App Store API version')
+        response = self.session.request(method, 'https://api.appstoreconnect.apple.com/' + version + '/' + path.lstrip('/'), timeout=90, **kwargs)
         if not response.ok:
             errors = response.json().get('errors', [])
             raise RuntimeError(json.dumps([{'status': e.get('status'), 'code': e.get('code'), 'detail': e.get('detail')} for e in errors], ensure_ascii=False))
