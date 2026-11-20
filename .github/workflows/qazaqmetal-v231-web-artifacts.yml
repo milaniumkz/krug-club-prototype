@@ -1,0 +1,23 @@
+name: Deliver QazaqMetal 2.3.1 Firebase push files
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Verify and publish complete testing files
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qazaqmetal-2.3.1-2026-11-20 --pattern 'v231web.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 3
+          cat parts/v231web.part.??? > delivery.zip
+          echo '7e907d9e9b047c1ab2345daf55a398fd042f42ef2ea98de70d847b860f94be0d  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check --ignore-missing checksums.sha256
+          gh release upload qazaqmetal-2.3.1-2026-11-20 QazaqMetal_full_project.zip checksums.sha256 --clobber
