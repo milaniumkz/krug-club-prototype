@@ -45,6 +45,11 @@ def main():
                 time.sleep(30)
                 continue
         with SessionLocal() as db:
+            from .app_config import read_settings
+            settings, _ = read_settings(db)
+            if not settings.features.push:
+                time.sleep(5)
+                continue
             deliveries = db.scalars(select(PushDelivery).where(
                 PushDelivery.status.in_(['pending', 'retry', 'sending']), PushDelivery.next_attempt_at <= now())
                 .order_by(PushDelivery.next_attempt_at).limit(20).with_for_update(skip_locked=True)).all()
@@ -58,6 +63,9 @@ def main():
                 eligible = push_eligible(db, user, notice)
                 if not device.active or device.user_id != user.id or user.status != 'active' or (user.member_until and user.member_until < now()) or (org and not org.active) or not eligible:
                     delivery.status = 'cancelled'
+                    continue
+                if settings.maintenance and user.role == 'member':
+                    delivery.next_attempt_at = now()+timedelta(seconds=30)
                     continue
                 delivery.status = 'sending'
                 delivery.attempts += 1

@@ -1,3 +1,4 @@
+import 'app_settings.dart';
 import 'i18n.dart';
 import 'tab_pin.dart';
 import 'dart:convert';
@@ -106,7 +107,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
     if (kIsWeb || busy) return;
     setState(() => busy = true);
     try {
-      await widget.api.get('/auth/me');
+      await widget.api.refreshIdentity();
       if (!mounted || widget.api.user == null) return;
       deviceAuthenticationActive = true;
       final ok = await biometrics.authenticate(
@@ -149,7 +150,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
       error = null;
     });
     try {
-      await widget.api.get('/auth/me');
+      await widget.api.refreshIdentity();
       if (!mounted || widget.api.user == null) return;
       if (creating) {
         final salt = base64UrlEncode(
@@ -307,6 +308,7 @@ class _PinLockState extends State<PinLock> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    SettingsScope.watch(context);
     if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -432,78 +434,91 @@ class PinPad extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    autofocus: true,
-    onKeyEvent: (_, event) {
-      if (!enabled || event is! KeyDownEvent) return KeyEventResult.ignored;
-      if (event.logicalKey == LogicalKeyboardKey.backspace) {
-        if (value.isNotEmpty) onChanged(value.substring(0, value.length - 1));
-        return KeyEventResult.handled;
-      }
-      final character = event.character;
-      if (character != null && RegExp(r'^\d$').hasMatch(character)) {
-        digit(character);
-        return KeyEventResult.handled;
-      }
-      return KeyEventResult.ignored;
-    },
-    child: Column(
-      children: [
-        if (label != 'PIN-код') AppText(label, textAlign: TextAlign.center),
-        const SizedBox(height: 12),
-        Semantics(
-          label: tx(
-            'Введено {0} из 6 цифр',
-          ).replaceFirst('{0}', '${value.length}'),
-          child: ExcludeSemantics(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                6,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 15,
-                  height: 15,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: index < value.length ? purple : Colors.transparent,
-                    border: Border.all(
-                      color: purple.withValues(alpha: .45),
-                      width: 1.5,
+  Widget build(BuildContext context) {
+    SettingsScope.watch(context);
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (_, event) {
+        if (!enabled || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.backspace) {
+          if (value.isNotEmpty) onChanged(value.substring(0, value.length - 1));
+          return KeyEventResult.handled;
+        }
+        final character = event.character;
+        if (character != null && RegExp(r'^\d$').hasMatch(character)) {
+          digit(character);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Column(
+        children: [
+          if (label != 'PIN-код') AppText(label, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          Semantics(
+            label: tx(
+              'Введено {0} из 6 цифр',
+            ).replaceFirst('{0}', '${value.length}'),
+            child: ExcludeSemantics(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  6,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 15,
+                    height: 15,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: index < value.length ? purple : Colors.transparent,
+                      border: Border.all(
+                        color: purple.withValues(alpha: .45),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 24),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 14,
-          childAspectRatio: 1.65,
-          children: [
-            for (final number in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-              _number(number),
-            const SizedBox.shrink(),
-            _number('0'),
-            IconButton(
-              key: const ValueKey('pin-delete'),
-              tooltip: tx('Удалить цифру'),
-              onPressed: enabled && value.isNotEmpty
-                  ? () => onChanged(value.substring(0, value.length - 1))
-                  : null,
-              icon: const Icon(Icons.backspace_outlined, size: 26),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+          const SizedBox(height: 24),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 14,
+            childAspectRatio: 1.65,
+            children: [
+              for (final number in [
+                '1',
+                '2',
+                '3',
+                '4',
+                '5',
+                '6',
+                '7',
+                '8',
+                '9',
+              ])
+                _number(number),
+              const SizedBox.shrink(),
+              _number('0'),
+              IconButton(
+                key: const ValueKey('pin-delete'),
+                tooltip: tx('Удалить цифру'),
+                onPressed: enabled && value.isNotEmpty
+                    ? () => onChanged(value.substring(0, value.length - 1))
+                    : null,
+                icon: const Icon(Icons.backspace_outlined, size: 26),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _number(String number) => FilledButton.tonal(
     key: ValueKey('pin-digit-$number'),
@@ -624,59 +639,62 @@ class _PinSettingsPageState extends State<PinSettingsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const AppText('PIN-код и биометрия')),
-    body: ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        if (!kIsWeb)
-          SwitchListTile(
-            title: const AppText('Вход по биометрии'),
-            subtitle: const AppText('Отпечаток пальца или Face ID'),
-            value: enabled,
-            onChanged: toggle,
-          ),
-        if (kIsWeb) const AppText('В браузере используется PIN-код.'),
-        const SizedBox(height: 20),
-        PinPad(
-          value: [current, next, repeat][step].text,
-          label: [
-            'Текущий PIN-код',
-            'Новый PIN-код',
-            'Повторите PIN-код',
-          ][step],
-          enabled: !busy,
-          onChanged: (value) {
-            setState(() {
-              [current, next, repeat][step].text = value;
-              error = null;
-            });
-            if (value.length == 6) {
-              if (step < 2) {
-                setState(() => step++);
-              } else {
-                save();
+  Widget build(BuildContext context) {
+    SettingsScope.watch(context);
+    return Scaffold(
+      appBar: AppBar(title: const AppText('PIN-код и биометрия')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (!kIsWeb)
+            SwitchListTile(
+              title: const AppText('Вход по биометрии'),
+              subtitle: const AppText('Отпечаток пальца или Face ID'),
+              value: enabled,
+              onChanged: toggle,
+            ),
+          if (kIsWeb) const AppText('В браузере используется PIN-код.'),
+          const SizedBox(height: 20),
+          PinPad(
+            value: [current, next, repeat][step].text,
+            label: [
+              'Текущий PIN-код',
+              'Новый PIN-код',
+              'Повторите PIN-код',
+            ][step],
+            enabled: !busy,
+            onChanged: (value) {
+              setState(() {
+                [current, next, repeat][step].text = value;
+                error = null;
+              });
+              if (value.length == 6) {
+                if (step < 2) {
+                  setState(() => step++);
+                } else {
+                  save();
+                }
               }
-            }
-          },
-        ),
-        if (step > 0)
-          TextButton(
-            onPressed: busy
-                ? null
-                : () => setState(() {
-                    step = 0;
-                    current.clear();
-                    next.clear();
-                    repeat.clear();
-                    error = null;
-                  }),
-            child: const AppText('Начать заново'),
+            },
           ),
-        if (error != null)
-          AppText(error!, style: const TextStyle(color: Colors.red)),
-        ActionButton('Сохранить PIN-код', onPressed: busy ? null : save),
-      ],
-    ),
-  );
+          if (step > 0)
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () => setState(() {
+                      step = 0;
+                      current.clear();
+                      next.clear();
+                      repeat.clear();
+                      error = null;
+                    }),
+              child: const AppText('Начать заново'),
+            ),
+          if (error != null)
+            AppText(error!, style: const TextStyle(color: Colors.red)),
+          ActionButton('Сохранить PIN-код', onPressed: busy ? null : save),
+        ],
+      ),
+    );
+  }
 }

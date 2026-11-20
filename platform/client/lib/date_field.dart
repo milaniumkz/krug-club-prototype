@@ -1,3 +1,4 @@
+import 'app_settings.dart';
 import 'package:flutter/material.dart';
 import 'i18n.dart';
 
@@ -45,35 +46,37 @@ class CalendarDateField extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      ValueListenableBuilder<TextEditingValue>(
-        valueListenable: controller,
-        builder: (context, value, _) => TextFormField(
-          key: ValueKey(value.text),
-          initialValue: value.text.isEmpty ? '' : displayDate(value.text),
-          enableInteractiveSelection: false,
-          readOnly: true,
-          showCursor: false,
-          onTap: () => pick(context),
-          decoration: InputDecoration(
-            labelText: tx(label),
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (value.text.isNotEmpty)
-                  IconButton(
-                    tooltip: tx('Очистить дату'),
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: controller.clear,
-                  ),
+  Widget build(BuildContext context) {
+    SettingsScope.watch(context);
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) => TextFormField(
+        key: ValueKey(value.text),
+        initialValue: value.text.isEmpty ? '' : displayDate(value.text),
+        enableInteractiveSelection: false,
+        readOnly: true,
+        showCursor: false,
+        onTap: () => pick(context),
+        decoration: InputDecoration(
+          labelText: tx(label),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (value.text.isNotEmpty)
                 IconButton(
-                  tooltip: tx('Выбрать дату'),
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  onPressed: () => pick(context),
+                  tooltip: tx('Очистить дату'),
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: controller.clear,
                 ),
-              ],
-            ),
+              IconButton(
+                tooltip: tx('Выбрать дату'),
+                icon: const Icon(Icons.calendar_month_outlined),
+                onPressed: () => pick(context),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }

@@ -38,6 +38,7 @@ def new_password():
 
 def user_json(user):
     return dict(id=user.id, name=user.name, role=user.role, status=user.status,
+                can_redeem=user.role == 'member' and user.status == 'active' and (user.member_until is None or user.member_until >= now()),
                 employee_number=user.employee_number, phone=user.phone,
                 organization_id=user.organization_id, partner_id=user.partner_id,
                 must_change_password=user.must_change_password,

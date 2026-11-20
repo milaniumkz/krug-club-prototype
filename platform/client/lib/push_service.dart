@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api.dart';
+import 'app_settings.dart';
 import 'firebase_web_loader.dart';
 import 'i18n.dart';
 
@@ -26,6 +27,7 @@ class PushService extends ChangeNotifier {
     current = this;
     api.addListener(sync);
     appLanguage.addListener(sync);
+    appSettings.addListener(sync);
     unawaited(sync());
   }
 
@@ -33,6 +35,11 @@ class PushService extends ChangeNotifier {
     if (api.user == null) {
       registered = null;
       onForeground('');
+      return;
+    }
+    if (!appSettings.feature('push')) {
+      status = 'Уведомления временно отключены';
+      notifyListeners();
       return;
     }
     if (api.user!['role'] == 'admin' ||
@@ -153,6 +160,7 @@ class PushSettings extends StatelessWidget {
   const PushSettings({super.key, required this.api});
   @override
   Widget build(BuildContext context) {
+    SettingsScope.watch(context);
     final service = PushService.current;
     if (service == null || api.user?['role'] == 'admin') {
       return const SizedBox.shrink();

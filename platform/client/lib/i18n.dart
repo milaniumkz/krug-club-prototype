@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'translations.dart';
+import 'app_settings.dart';
 
 class AppLanguage extends ChangeNotifier {
   String code = 'ru';
@@ -30,9 +31,11 @@ String tx(String? value) {
       .replaceAll('QAZAQMETAL KÁSIPODAǴY', 'QMET+')
       .replaceAll('QAZAQMETAL', 'QMET+')
       .replaceAll('КазахМетал', 'QMET+');
-  if (appLanguage.code == 'ru') return value;
+  if (appLanguage.code == 'ru') {
+    return value.replaceAll('QMET+', appSettings.brandName);
+  }
   final exact = kkTranslations[value];
-  if (exact != null) return exact;
+  if (exact != null) return exact.replaceAll('QMET+', appSettings.brandName);
   if (_patterns.isEmpty) {
     for (final entry in kkTranslations.entries) {
       if (!entry.key.contains(RegExp(r'\{\d+\}'))) continue;
@@ -52,27 +55,30 @@ String tx(String? value) {
     for (var i = 1; i <= match.groupCount; i++) {
       result = result.replaceAll('{${i - 1}}', tx(match.group(i) ?? ''));
     }
-    return result;
+    return result.replaceAll('QMET+', appSettings.brandName);
   }
-  return value;
+  return value.replaceAll('QMET+', appSettings.brandName);
 }
 
 class LanguageSwitch extends StatelessWidget {
   const LanguageSwitch({super.key});
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: appLanguage,
-    builder: (context, _) => SegmentedButton<String>(
-      segments: const [
-        ButtonSegment(value: 'ru', label: Text('РУС')),
-        ButtonSegment(value: 'kk', label: Text('ҚАЗ')),
-      ],
-      selected: {appLanguage.code},
-      onSelectionChanged: (value) => appLanguage.set(value.first),
-      showSelectedIcon: false,
-      style: const ButtonStyle(visualDensity: VisualDensity.compact),
-    ),
-  );
+  Widget build(BuildContext context) {
+    SettingsScope.watch(context);
+    return ListenableBuilder(
+      listenable: appLanguage,
+      builder: (context, _) => SegmentedButton<String>(
+        segments: const [
+          ButtonSegment(value: 'ru', label: Text('РУС')),
+          ButtonSegment(value: 'kk', label: Text('ҚАЗ')),
+        ],
+        selected: {appLanguage.code},
+        onSelectionChanged: (value) => appLanguage.set(value.first),
+        showSelectedIcon: false,
+        style: const ButtonStyle(visualDensity: VisualDensity.compact),
+      ),
+    );
+  }
 }
 
 class AppText extends Text {
@@ -96,6 +102,7 @@ class AppText extends Text {
   });
   @override
   Widget build(BuildContext context) {
+    SettingsScope.watch(context);
     Localizations.localeOf(context);
     final translated = tx(data);
     if (translated == data) return super.build(context);

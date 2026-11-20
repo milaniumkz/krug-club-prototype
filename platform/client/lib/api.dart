@@ -1,4 +1,5 @@
 import 'i18n.dart';
+import 'app_settings.dart';
 import 'tab_pin.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -51,7 +52,7 @@ class Api extends ChangeNotifier {
                ? Uri.base.origin
                : const String.fromEnvironment(
                    'API_BASE_URL',
-                   defaultValue: 'http://10.0.2.2:8000',
+                   defaultValue: 'https://qazaqmetal.109.235.119.144.sslip.io',
                  )),
        storage =
            storage ??
@@ -66,6 +67,9 @@ class Api extends ChangeNotifier {
 
   String get portal {
     if (kIsWeb) {
+      if (['member', 'partner', 'admin'].contains(appSettings.portal)) {
+        return appSettings.portal;
+      }
       final host = Uri.base.host.toLowerCase();
       if (host.startsWith('qazaqmetalpartners.')) return 'partner';
       if (host.startsWith('qazaqmetaladmin.')) return 'admin';
@@ -75,6 +79,13 @@ class Api extends ChangeNotifier {
 
   Map<String, String> get headers => {
     'X-QM-Client': 'web',
+    'Accept-Language': appLanguage.code,
+    'X-QM-Platform': kIsWeb
+        ? 'web'
+        : defaultTargetPlatform == TargetPlatform.iOS
+        ? 'ios'
+        : 'android',
+    'X-QM-Build': appSettings.buildNumber.toString(),
     if (!kIsWeb && token != null) 'Authorization': 'Bearer $token',
   };
   Future<void> boot() async {
@@ -162,10 +173,17 @@ class Api extends ChangeNotifier {
   Future<dynamic> get(String path) => request('GET', path);
   Future<dynamic> post(String path, [Json? data]) =>
       request('POST', path, data);
-  Future<dynamic> request(String method, String path, [Json? data]) async {
+  Future<dynamic> request(
+    String method,
+    String path, [
+    Json? data,
+    Map<String, String>? extraHeaders,
+  ]) async {
     try {
+      final requestOwner = user?['id'];
+      final requestToken = token;
       final req = http.Request(method, Uri.parse('$base/api$path'))
-        ..headers.addAll(headers);
+        ..headers.addAll({...headers, ...?extraHeaders});
       if (data != null) {
         req.headers['Content-Type'] = 'application/json';
         req.body = jsonEncode(data);
@@ -173,6 +191,7 @@ class Api extends ChangeNotifier {
       final response = await http.Response.fromStream(
         await client.send(req).timeout(const Duration(seconds: 60)),
       );
+      if (response.statusCode == 304) return null;
       final dynamic body = response.body.isEmpty
           ? {}
           : jsonDecode(utf8.decode(response.bodyBytes));
@@ -185,8 +204,10 @@ class Api extends ChangeNotifier {
                 detail == 'Организация отключена' ||
                 detail == 'Доступ партнёра приостановлен' ||
                 detail.startsWith('Срок членства истёк'));
-        if ((response.statusCode == 401 && path != '/auth/login') ||
-            closedAccess) {
+        if (((response.statusCode == 401 && path != '/auth/login') ||
+                closedAccess) &&
+            user?['id'] == requestOwner &&
+            token == requestToken) {
           await clear();
         }
         throw ApiError(
@@ -205,6 +226,25 @@ class Api extends ChangeNotifier {
     } catch (_) {
       throw ApiError(0, 'Не удалось связаться с сервером. Повторите попытку');
     }
+  }
+
+  Future<void> refreshIdentity() async {
+    final owner = user?['id'];
+    final value = Json.from(await get('/auth/me') as Map);
+    if (owner != null &&
+        user?['id'] == owner &&
+        value['id'] == owner &&
+        jsonEncode(user) != jsonEncode(value)) {
+      user = value;
+      notifyListeners();
+    }
+  }
+
+  Future<Json?> fetchAppConfig(String? etag) async {
+    final data = await request('GET', '/app-config', null, {
+      'If-None-Match': ?etag,
+    });
+    return data == null ? null : Json.from(data as Map);
   }
 
   Future<void> accept(dynamic result) async {

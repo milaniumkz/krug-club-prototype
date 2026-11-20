@@ -38,9 +38,12 @@ from .security import (COOKIE, DUMMY_HASH, PRODUCTION, admin, current_user, dige
                        hash_password, issue_session, manager, member, new_password,
                        ready_user, user_json, verify_password, portal_role)
 
-app = FastAPI(title='QMET+ API', version='1.0.0',
+from .app_config import router as config_router, client_version_guard, read_settings, feature_enabled, require_feature
+
+app = FastAPI(title='QMET+ API', version='1.0.0', dependencies=[Depends(client_version_guard)],
               docs_url=None if PRODUCTION else '/api/docs', redoc_url=None,
               openapi_url='/api/openapi.json')
+app.include_router(config_router)
 app.add_event_handler('startup', session_events.start)
 app.add_event_handler('shutdown', session_events.stop)
 app.add_event_handler('shutdown', catalog_db.stop)
@@ -62,8 +65,9 @@ app.add_middleware(Protection, origin=ORIGIN, tile_origin=TILE_ORIGIN,
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(_request, exc):
+    messages = '; '.join(e['msg'].removeprefix('Value error, ') for e in exc.errors()[:3]) if _request.url.path == '/api/admin/app-config' else 'Проверьте заполнение полей'
     # Never echo passwords, tokens or the submitted CSV/JSON back in error payloads.
-    return JSONResponse(status_code=422, content={'detail': 'Проверьте заполнение полей',
+    return JSONResponse(status_code=422, content={'detail': messages,
         'fields': [{'field': '.'.join(map(str, e['loc'])), 'type': e['type']} for e in exc.errors()]})
 
 
@@ -180,7 +184,9 @@ def localized_map_style(language):
 
 
 @app.get('/api/map-style')
-def map_style(lang: Literal['ru', 'kk'] = 'ru'):
+def map_style(lang: Literal['ru', 'kk'] = 'ru', db=Depends(get_db)):
+    if not feature_enabled(db, 'map'):
+        raise HTTPException(503, 'Карта временно недоступна')
     try:
         return localized_map_style(lang)
     except (httpx.HTTPError, ValueError):
@@ -188,14 +194,16 @@ def map_style(lang: Literal['ru', 'kk'] = 'ru'):
 
 
 @app.get('/api/meta')
-def meta():
-    return {'brand': 'QMET+', 'session_days': 30,
+def meta(db=Depends(get_db)):
+    return {'brand': read_settings(db)[0].brand_name, 'session_days': 30,
             'tiles': TILE_URL,
             'attribution': (os.getenv('MAP_ATTRIBUTION') or '© OpenStreetMap contributors · Tiles OSM France'), 'default_center': [52.287, 76.967], 'map_style': '/api/map-style', 'languages': ['ru', 'kk']}
 
 
 @app.get('/api/push-config')
-def push_config(request: Request, platform: Literal['android', 'ios', 'web'] = 'android'):
+def push_config(request: Request, platform: Literal['android', 'ios', 'web'] = 'android', db=Depends(get_db)):
+    if not feature_enabled(db, 'push'):
+        return {'enabled': False}
     # Client metadata is public; never expose the server service-account document.
     role = portal_role(request) or 'member'
     if role not in ('member', 'partner'):
@@ -218,8 +226,8 @@ def push_config(request: Request, platform: Literal['android', 'ios', 'web'] = '
 
 
 @app.get('/api/push-config.js')
-def push_worker_config(request: Request):
-    config = push_config(request, 'web')
+def push_worker_config(request: Request, db=Depends(get_db)):
+    config = push_config(request, 'web', db)
     # importScripts requires synchronous, same-origin configuration. Values are
     # JSON-encoded client metadata only, never the service-account document.
     script = 'self.QM_FIREBASE_CONFIG=' + json.dumps(config, ensure_ascii=True) + ';'
@@ -431,12 +439,15 @@ def catalog_detail(resource_id: str, user=Depends(member), db=Depends(get_db)):
     require(r)
     banners = db.scalars(select(Resource).where(Resource.kind == 'banner', Resource.venue_id == r.id,
         Resource.enabled.is_(True), Resource.deleted.is_(False), Resource.published.is_not(None))).all()
+    banners_visible = feature_enabled(db, 'banners')
     return dict(**resource_json(r), offers=[privilege_json(o) for o in offers_for(db, user, r.id)],
-        banners=[resource_json(b) for b in banners if active_data(b.published, user.organization_id)])
+        banners=[resource_json(b) for b in banners if banners_visible and active_data(b.published, user.organization_id)])
 
 
 @app.get('/api/banners')
 def banners(user=Depends(member), db=Depends(get_db)):
+    if not feature_enabled(db, 'banners'):
+        return []
     venues = {r.id for r in public_venues(db, user)}
     return [resource_json(r) for r in db.scalars(select(Resource).where(
         Resource.kind == 'banner', Resource.enabled.is_(True), Resource.deleted.is_(False),
@@ -475,7 +486,8 @@ def history(limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
 
 
 @app.post('/api/scan')
-def scan(body: S.ScanIn, user=Depends(member), db=Depends(get_db)):
+def scan(body: S.ScanIn, request: Request, user=Depends(member), db=Depends(get_db)):
+    require_feature(db, 'qr', request.headers.get('accept-language', 'ru'))
     # Serialize scans and employment changes per member; PostgreSQL supplies row locks.
     user = db.scalar(select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True))
     if user.status != 'active' or (user.member_until and user.member_until < now()):

@@ -202,3 +202,12 @@ class PushDelivery(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     next_attempt_at: Mapped[datetime] = mapped_column(DateTime, default=now, index=True)
     last_error: Mapped[str] = mapped_column(String(80), default='')
+
+
+class AppSetting(Base):
+    __tablename__ = 'app_settings'
+    key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    updated_by: Mapped[str | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'))

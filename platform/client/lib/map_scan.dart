@@ -1,3 +1,4 @@
+import 'app_settings.dart';
 import 'i18n.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -140,130 +141,133 @@ class _VenueMapState extends State<VenueMap> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-        child: Row(
-          children: [
-            Expanded(child: AppText('На карте', style: titleStyle(30))),
-            IconButton(
-              tooltip: tx('Обновить заведения'),
-              onPressed: load,
-              icon: const Icon(Icons.refresh),
-            ),
-            IconButton(
-              tooltip: tx('Моё местоположение'),
-              onPressed: locating ? null : locate,
-              icon: locating
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.my_location, color: purple),
-            ),
-          ],
-        ),
-      ),
-      if (locationMessage != null)
+  Widget build(BuildContext context) {
+    SettingsScope.watch(context);
+    return Column(
+      children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-          child: AppText(
-            locationMessage!,
-            style: const TextStyle(fontSize: 12, color: muted),
-          ),
-        ),
-      if (error != null)
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: AppText(error!, style: const TextStyle(fontSize: 12)),
-        ),
-      Expanded(
-        child: FlutterMap(
-          mapController: map,
-          options: MapOptions(
-            initialCenter: position ?? const LatLng(52.287, 76.967),
-            initialZoom: 13,
-            minZoom: 3,
-            maxZoom: 18,
-            onMapReady: () {
-              ready = true;
-              if (position != null) map.move(position!, 14);
-              load();
-            },
-            onPositionChanged: (_, gesture) {
-              debounce?.cancel();
-              debounce = Timer(const Duration(milliseconds: 500), load);
-            },
-          ),
-          children: [
-            if (vectorStyle != null)
-              vector.VectorTileLayer(
-                theme: vectorStyle!.theme,
-                tileProviders: vectorStyle!.providers,
-                sprites: vectorStyle!.sprites,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
+            children: [
+              Expanded(child: AppText('На карте', style: titleStyle(30))),
+              IconButton(
+                tooltip: tx('Обновить заведения'),
+                onPressed: load,
+                icon: const Icon(Icons.refresh),
               ),
-            MarkerLayer(
-              markers: [
-                if (position != null)
-                  Marker(
-                    point: position!,
-                    width: 28,
-                    height: 28,
-                    child: Semantics(
-                      label: tx('Вы здесь'),
-                      child: Icon(
-                        Icons.my_location_rounded,
-                        color: Colors.blue,
-                        size: 28,
+              IconButton(
+                tooltip: tx('Моё местоположение'),
+                onPressed: locating ? null : locate,
+                icon: locating
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.my_location, color: purple),
+              ),
+            ],
+          ),
+        ),
+        if (locationMessage != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+            child: AppText(
+              locationMessage!,
+              style: const TextStyle(fontSize: 12, color: muted),
+            ),
+          ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: AppText(error!, style: const TextStyle(fontSize: 12)),
+          ),
+        Expanded(
+          child: FlutterMap(
+            mapController: map,
+            options: MapOptions(
+              initialCenter: position ?? const LatLng(52.287, 76.967),
+              initialZoom: 13,
+              minZoom: 3,
+              maxZoom: 18,
+              onMapReady: () {
+                ready = true;
+                if (position != null) map.move(position!, 14);
+                load();
+              },
+              onPositionChanged: (_, gesture) {
+                debounce?.cancel();
+                debounce = Timer(const Duration(milliseconds: 500), load);
+              },
+            ),
+            children: [
+              if (vectorStyle != null)
+                vector.VectorTileLayer(
+                  theme: vectorStyle!.theme,
+                  tileProviders: vectorStyle!.providers,
+                  sprites: vectorStyle!.sprites,
+                ),
+              MarkerLayer(
+                markers: [
+                  if (position != null)
+                    Marker(
+                      point: position!,
+                      width: 28,
+                      height: 28,
+                      child: Semantics(
+                        label: tx('Вы здесь'),
+                        child: Icon(
+                          Icons.my_location_rounded,
+                          color: Colors.blue,
+                          size: 28,
+                        ),
                       ),
                     ),
-                  ),
-                ...venues
-                    .where((v) => v['data']['latitude'] != null)
-                    .map(
-                      (v) => Marker(
-                        point: LatLng(
-                          (v['data']['latitude'] as num).toDouble(),
-                          (v['data']['longitude'] as num).toDouble(),
-                        ),
-                        width: 48,
-                        height: 48,
-                        child: Semantics(
-                          button: true,
-                          label: tx(s(v['data']['name'])),
-                          child: Tooltip(
-                            message: s(v['data']['name']),
-                            child: Material(
-                              color: purple,
-                              shape: const CircleBorder(),
-                              elevation: 4,
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: () => route(
-                                  context,
-                                  VenuePage(api: widget.api, id: s(v['id'])),
-                                ),
-                                child: const Icon(
-                                  Icons.storefront_outlined,
-                                  color: Colors.white,
-                                  size: 25,
+                  ...venues
+                      .where((v) => v['data']['latitude'] != null)
+                      .map(
+                        (v) => Marker(
+                          point: LatLng(
+                            (v['data']['latitude'] as num).toDouble(),
+                            (v['data']['longitude'] as num).toDouble(),
+                          ),
+                          width: 48,
+                          height: 48,
+                          child: Semantics(
+                            button: true,
+                            label: tx(s(v['data']['name'])),
+                            child: Tooltip(
+                              message: s(v['data']['name']),
+                              child: Material(
+                                color: purple,
+                                shape: const CircleBorder(),
+                                elevation: 4,
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: () => route(
+                                    context,
+                                    VenuePage(api: widget.api, id: s(v['id'])),
+                                  ),
+                                  child: const Icon(
+                                    Icons.storefront_outlined,
+                                    color: Colors.white,
+                                    size: 25,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-              ],
-            ),
-            MapCredits(attribution: attribution),
-          ],
+                ],
+              ),
+              MapCredits(attribution: attribution),
+            ],
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class ScannerPage extends StatefulWidget {
@@ -416,137 +420,140 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: const Color(0xff211b29),
-    child: SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          AppText(
-            'Сканирование QR',
-            style: titleStyle(29).copyWith(color: Colors.white),
-          ),
-          const SizedBox(height: 10),
-          const AppText(
-            'Наведите камеру на QR-код заведения. Партнёр определится автоматически.',
-            style: TextStyle(color: Colors.white70, height: 1.5),
-          ),
-          const SizedBox(height: 24),
-          AspectRatio(
-            aspectRatio: 1,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  MobileScanner(
-                    controller: controller,
-                    onDetect: (capture) {
-                      if (paused || busy) return;
-                      for (final b in capture.barcodes) {
-                        if (b.rawValue != null) {
-                          scan(b.rawValue!);
-                          break;
+  Widget build(BuildContext context) {
+    SettingsScope.watch(context);
+    return ColoredBox(
+      color: const Color(0xff211b29),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            AppText(
+              'Сканирование QR',
+              style: titleStyle(29).copyWith(color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            const AppText(
+              'Наведите камеру на QR-код заведения. Партнёр определится автоматически.',
+              style: TextStyle(color: Colors.white70, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    MobileScanner(
+                      controller: controller,
+                      onDetect: (capture) {
+                        if (paused || busy) return;
+                        for (final b in capture.barcodes) {
+                          if (b.rawValue != null) {
+                            scan(b.rawValue!);
+                            break;
+                          }
                         }
-                      }
-                    },
-                    errorBuilder: (context, error) => ColoredBox(
-                      color: const Color(0xff362940),
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.no_photography_outlined,
-                                size: 48,
-                                color: lavender,
-                              ),
-                              const SizedBox(height: 14),
-                              const AppText(
-                                'Камера недоступна. Разрешите доступ к камере в настройках телефона или браузера.',
-                                style: TextStyle(color: Colors.white),
-                                textAlign: TextAlign.center,
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  try {
-                                    final opened =
-                                        await Geolocator.openAppSettings();
-                                    if (!opened && context.mounted) {
-                                      toast(
-                                        context,
-                                        'Разрешите камеру в настройках устройства или сайта',
-                                      );
+                      },
+                      errorBuilder: (context, error) => ColoredBox(
+                        color: const Color(0xff362940),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.no_photography_outlined,
+                                  size: 48,
+                                  color: lavender,
+                                ),
+                                const SizedBox(height: 14),
+                                const AppText(
+                                  'Камера недоступна. Разрешите доступ к камере в настройках телефона или браузера.',
+                                  style: TextStyle(color: Colors.white),
+                                  textAlign: TextAlign.center,
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    try {
+                                      final opened =
+                                          await Geolocator.openAppSettings();
+                                      if (!opened && context.mounted) {
+                                        toast(
+                                          context,
+                                          'Разрешите камеру в настройках устройства или сайта',
+                                        );
+                                      }
+                                    } catch (_) {
+                                      if (context.mounted) {
+                                        toast(
+                                          context,
+                                          'В браузере разрешите камеру через значок настроек рядом с адресом сайта',
+                                        );
+                                      }
                                     }
-                                  } catch (_) {
-                                    if (context.mounted) {
-                                      toast(
-                                        context,
-                                        'В браузере разрешите камеру через значок настроек рядом с адресом сайта',
-                                      );
-                                    }
-                                  }
-                                },
-                                child: const AppText('Открыть настройки'),
-                              ),
-                            ],
+                                  },
+                                  child: const AppText('Открыть настройки'),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xffb771f1),
-                          width: 4,
+                    IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xffb771f1),
+                            width: 4,
+                          ),
+                          borderRadius: BorderRadius.circular(28),
                         ),
-                        borderRadius: BorderRadius.circular(28),
                       ),
                     ),
-                  ),
-                  if (busy) const Center(child: CircularProgressIndicator()),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (error != null) Panel(color: lavender, child: AppText(error!)),
-          const SizedBox(height: 12),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 16,
-            children: [
-              IconButton(
-                tooltip: tx('Переключить камеру'),
-                onPressed: () async {
-                  try {
-                    await controller.switchCamera();
-                  } catch (_) {
-                    if (context.mounted) {
-                      toast(context, 'Камера недоступна');
-                    }
-                  }
-                },
-                icon: const Icon(
-                  Icons.cameraswitch_outlined,
-                  color: Colors.white,
+                    if (busy) const Center(child: CircularProgressIndicator()),
+                  ],
                 ),
               ),
-            ],
-          ),
-          if (paused || error != null)
-            ActionButton(
-              busy ? 'Проверяем…' : 'Сканировать ещё / повторить',
-              onPressed: busy ? null : retry,
-              icon: Icons.qr_code_scanner_rounded,
             ),
-          const SizedBox(height: 18),
-        ],
+            const SizedBox(height: 14),
+            if (error != null) Panel(color: lavender, child: AppText(error!)),
+            const SizedBox(height: 12),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              children: [
+                IconButton(
+                  tooltip: tx('Переключить камеру'),
+                  onPressed: () async {
+                    try {
+                      await controller.switchCamera();
+                    } catch (_) {
+                      if (context.mounted) {
+                        toast(context, 'Камера недоступна');
+                      }
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.cameraswitch_outlined,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            if (paused || error != null)
+              ActionButton(
+                busy ? 'Проверяем…' : 'Сканировать ещё / повторить',
+                onPressed: busy ? null : retry,
+                icon: Icons.qr_code_scanner_rounded,
+              ),
+            const SizedBox(height: 18),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

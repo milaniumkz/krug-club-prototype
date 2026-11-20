@@ -115,6 +115,10 @@ def push_eligible(db, user, notice):
         return False
     if notice.kind == 'new_venue':
         return True
+    if notice.kind == 'new_banner':
+        from .app_config import feature_enabled
+        if not feature_enabled(db, 'banners'):
+            return False
     if notice.kind in ('new_offer', 'discount_increased', 'new_banner'):
         parts = notice.event_key.split(':')
         resource_id = parts[0] if len(parts[0]) == 36 else parts[1]

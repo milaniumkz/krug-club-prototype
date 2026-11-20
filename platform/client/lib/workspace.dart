@@ -1,4 +1,6 @@
 import 'i18n.dart';
+import 'app_settings.dart';
+import 'remote_settings_ui.dart';
 import 'date_field.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
@@ -16,6 +18,7 @@ import 'ui.dart';
 import 'member.dart' show ProfilePage, NotificationsPage;
 
 const labels = {
+  'app-settings': 'Настройки приложения',
   'overview': 'Обзор',
   'venue': 'Заведения',
   'offer': 'Скидки и акции',
@@ -30,6 +33,7 @@ const labels = {
   'notifications': 'Уведомления',
 };
 const icons = {
+  'app-settings': Icons.tune_rounded,
   'overview': Icons.bar_chart_rounded,
   'venue': Icons.storefront_outlined,
   'offer': Icons.local_offer_outlined,
@@ -77,12 +81,14 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
 
   @override
   Widget build(BuildContext context) {
+    SettingsScope.watch(context);
     final admin = widget.api.user!['role'] == 'admin';
     final menu = [
       'overview',
       'venue',
       'banner',
       if (admin) ...[
+        'app-settings',
         'moderation',
         'accounts',
         'organizations',
@@ -95,6 +101,8 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
     ];
     Widget content() {
       switch (page) {
+        case 'app-settings':
+          return AdminAppSettingsPage(api: widget.api);
         case 'notifications':
           return NotificationsPage(api: widget.api);
         case 'overview':
@@ -340,7 +348,7 @@ class ResourceList extends StatelessWidget {
                   if (d['percent'] != null)
                     AppText(
                       'Скидка: ${d['percent']}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: purple,
                         fontWeight: FontWeight.w700,
                       ),
@@ -910,7 +918,7 @@ class _LocationPickerState extends State<LocationPicker> {
             if (selected != null)
               Marker(
                 point: selected!,
-                child: const Icon(Icons.location_on, size: 40, color: purple),
+                child: Icon(Icons.location_on, size: 40, color: purple),
               ),
           ],
         ),
@@ -1089,7 +1097,7 @@ class ModerationPage extends StatelessWidget {
                   AppText(s(r['data']['name']), style: titleStyle(25)),
                   AppText(
                     '${human(r["resource"]["kind"])} · ${r["action"] == "delete" ? "Запрос удаления" : "Изменение / публикация"}',
-                    style: const TextStyle(color: purple),
+                    style: TextStyle(color: purple),
                   ),
                   const SizedBox(height: 16),
                   LayoutBuilder(
@@ -1347,7 +1355,7 @@ class _StatsPageState extends State<StatsPage> {
           AppText('По заведениям', style: titleStyle(23)),
           ...rows(stats['venues']).map(
             (v) => ListTile(
-              leading: const Icon(Icons.storefront_outlined, color: purple),
+              leading: Icon(Icons.storefront_outlined, color: purple),
               title: AppText(s(v['name'])),
               trailing: AppText(
                 '${v["uses"]} скидок',
@@ -1367,10 +1375,7 @@ class _StatsPageState extends State<StatsPage> {
               ),
               trailing: AppText(
                 '−${o["percent"]}%',
-                style: const TextStyle(
-                  color: purple,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: purple, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -2083,7 +2088,7 @@ class AuditPage extends StatelessWidget {
         const SizedBox(height: 18),
         ...rows(data).map(
           (a) => ListTile(
-            leading: const Icon(Icons.history, color: purple),
+            leading: Icon(Icons.history, color: purple),
             title: AppText(human(a['action'])),
             subtitle: SelectableText(
               tx(
