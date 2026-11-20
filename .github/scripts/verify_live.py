@@ -64,6 +64,7 @@ try:
  call('GET','/api/catalog',token=token,status=428)
  personal='qa'+secrets.token_hex(2);changed=call('POST','/api/auth/password',{'old_password':temp,'new_password':personal},token);token=changed['token'];assert not changed['user']['must_change_password']
  call('GET','/api/auth/me',token=token);call('GET','/api/auth/sessions',token=token)
+ assert call('GET','/api/meta')['brand']=='QMET+'
  catalog=call('GET','/api/catalog',token=token);assert catalog['total']>=2
  codes=json.loads(Path('.github/demo-assets/qr-codes.json').read_text())['partners']
  # Owners can rotate their QR codes. Old printed fixtures must not reset production QR hashes.
@@ -123,7 +124,7 @@ try:
   for origin,session_token,role in [(ADMIN,admin,'admin'),(PARTNER,staff_token,'partner')]:
    staff_context=browser.new_context(viewport={'width':1200,'height':900},permissions=['notifications'])
    staff_context.add_cookies([{'name':'qm_session','value':session_token,'url':origin,'httpOnly':True,'secure':True,'sameSite':'Strict'}])
-   page=staff_context.new_page();page.set_default_timeout(15000);page.goto(origin);enable()
+   page=staff_context.new_page();page.set_default_timeout(15000);page.goto(origin);enable();assert page.title()=='QMET+'
    for reload in range(2):
     page.get_by_text('Обзор',exact=True).first.wait_for()
     assert page.get_by_text('Создайте PIN-код',exact=True).count()==0
@@ -140,7 +141,7 @@ try:
     checks.append({'case':role+' mobile layout '+str(width)+'px','result':'PASS'})
    staff_context.close()
   page=member_page
-  page.goto(BASE);enable()
+  page.goto(BASE);enable();page.get_by_text('QMET+',exact=True).first.wait_for();assert page.title()=='QMET+'
   fill('Табельный номер',member_identifier);fill('Пароль',browser_temporary)
   page.get_by_role('button',name='Войти',exact=True).click();page.wait_for_timeout(1300)
   fill('Временный пароль',browser_temporary);fill('Новый пароль',personal);fill('Повторите новый пароль',personal)
