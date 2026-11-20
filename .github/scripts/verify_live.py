@@ -102,6 +102,15 @@ try:
   browser=pw.chromium.launch(executable_path=executable,args=['--no-sandbox','--disable-dev-shm-usage'])
   ctx=browser.new_context(viewport={'width':390,'height':844},permissions=['geolocation','notifications'],geolocation={'latitude':52.287,'longitude':76.967})
   page=ctx.new_page();page.set_default_timeout(15000)
+  push_http=[]; push_csp=[]; push_failures=[]
+  from urllib.parse import urlsplit
+  def push_response(response):
+   host=urlsplit(response.url).hostname or ''
+   if host.endswith(('googleapis.com','gstatic.com')):push_http.append({'host':host,'status':response.status})
+  page.on('response',push_response)
+  page.on('console',lambda message:push_csp.append(True) if 'Content Security Policy' in message.text and ('firebase' in message.text or 'gstatic' in message.text or 'googleapis' in message.text) else None)
+  page.on('requestfailed',lambda request:push_failures.append({'host':urlsplit(request.url).hostname,'error':request.failure}) if (urlsplit(request.url).hostname or '').endswith(('googleapis.com','gstatic.com')) else None)
+
   def enable():
    page.locator('flt-semantics-placeholder, flt-semantics').first.wait_for(state='attached',timeout=30000)
    if page.locator('flt-semantics-placeholder').count():page.locator('flt-semantics-placeholder').evaluate('(e)=>e.click()')
@@ -179,7 +188,9 @@ try:
    checks.append({'case':'Real Chrome FCM registration, worker delivery and foreground reception','result':'PASS'})
    page.screenshot(path=str(out/'real-web-push.png'))
   else:
-   checks.append({'case':'Headless Chrome did not provide an FCM token; real-device delivery still requires physical test','result':'INFO'})
+   assert not push_csp, 'Firebase SDK blocked by CSP'
+   assert not any(x['status']>=400 and x['host'] in ('firebaseinstallations.googleapis.com','fcmregistrations.googleapis.com','fcm.googleapis.com') for x in push_http), 'Firebase browser registration returned an HTTP error'
+   checks.append({'case':'Headless Chrome did not provide an FCM token; real-device delivery still requires physical test','result':'INFO','firebase_http':push_http,'firebase_network_failures':push_failures})
   page.get_by_role('tab',name='Профиль',exact=True).click();page.wait_for_timeout(500)
   # The real Logout UI must end the PIN lifecycle; credential login must create it again.
   for _ in range(8):
