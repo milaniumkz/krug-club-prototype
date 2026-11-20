@@ -36,8 +36,8 @@ with SessionLocal() as db:
         notice = Notification(user_id=user.id, venue_id=venue.id, event_key=key,
             kind='new_venue' if role == 'member' else 'moderation_approved',
             title='QMET+ · Проверка уведомлений', title_kk='QMET+ · Хабарландыруды тексеру',
-            body='Тестовое push-уведомление на вашем iPhone. Сборка 21.',
-            body_kk='iPhone құрылғысындағы сынақ push-хабарландыруы. 21 жинағы.')
+            body='Тестовое push-уведомление на вашем iPhone. Сборка 22.',
+            body_kk='iPhone құрылғысындағы сынақ push-хабарландыруы. 22 жинағы.')
         if not push_eligible(db, user, notice):
             raise SystemExit('Review device is not eligible; nothing queued')
         db.add(notice)
