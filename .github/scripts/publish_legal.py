@@ -7,6 +7,7 @@ from pathlib import Path
 import secrets
 import shlex
 import socket
+import sys
 
 import paramiko
 
@@ -24,10 +25,13 @@ if not secrets.compare_digest(fingerprint, EXPECTED):
 transport.auth_password('root', password)
 password = None
 
-def command(value):
+def command(value, input_data=None):
     channel = transport.open_session(timeout=20)
     channel.settimeout(60)
     channel.exec_command(value)
+    if input_data is not None:
+        channel.sendall(input_data)
+    channel.shutdown_write()
     output = channel.makefile('rb').read().decode()
     error = channel.makefile_stderr('rb').read().decode()
     if channel.recv_exit_status():
@@ -36,6 +40,13 @@ def command(value):
     return output
 
 try:
+    if '--review-accounts' in sys.argv:
+        with paramiko.SFTPClient.from_transport(transport) as sftp:
+            sftp.put('.github/scripts/seed_store_review.py', '/opt/qazaqmetal/incoming/seed_store_review.py')
+        command('cd /opt/qazaqmetal/current && docker compose cp /opt/qazaqmetal/incoming/seed_store_review.py api:/tmp/seed_store_review.py')
+        print(command('cd /opt/qazaqmetal/current && docker compose exec -T api python /tmp/seed_store_review.py', os.environ.pop('STORE_REVIEW_CREDENTIALS').encode()))
+        command('cd /opt/qazaqmetal/current && docker compose exec -T api rm /tmp/seed_store_review.py')
+        raise SystemExit(0)
     command('install -d -m 755 /opt/qazaqmetal/current/legal /opt/qazaqmetal/current/web/legal')
     with paramiko.SFTPClient.from_transport(transport) as sftp:
         for page in sorted(Path('platform/legal').glob('*.html')):
