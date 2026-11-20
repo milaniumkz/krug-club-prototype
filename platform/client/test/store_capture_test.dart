@@ -14,7 +14,10 @@ import 'system_test.dart' as fixtures;
 
 void main() {
   testWidgets('Capture actual member and partner interfaces', (tester) async {
-    tester.view.physicalSize = const Size(440, 956);
+    final tablet = Platform.environment['QMET_CAPTURE_TABLET'] == '1';
+    tester.view.physicalSize = tablet
+        ? const Size(1024, 1366)
+        : const Size(440, 956);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -101,17 +104,17 @@ void main() {
         final boundary =
             key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
         await tester.runAsync(() async {
-          final image = await boundary.toImage(pixelRatio: 3);
+          final image = await boundary.toImage(pixelRatio: tablet ? 2 : 3);
           final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
           await File(
-            '${directory.path}/$filename.png',
+            '${directory.path}/${tablet ? 'tablet-' : ''}$filename.png',
           ).writeAsBytes(bytes!.buffer.asUint8List());
           image.dispose();
         });
       }
 
       await capture(role);
-      for (final destination in [1, 4]) {
+      for (final destination in tablet ? <int>[] : [1, 4]) {
         await tester.tap(find.byType(NavigationDestination).at(destination));
         await tester.pumpAndSettle();
         await capture('$role-$destination');
