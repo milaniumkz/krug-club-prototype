@@ -100,7 +100,7 @@ try:
  with sync_playwright() as pw:
   executable=shutil.which('google-chrome') or shutil.which('chromium')
   browser=pw.chromium.launch(executable_path=executable,args=['--no-sandbox','--disable-dev-shm-usage'])
-  ctx=browser.new_context(viewport={'width':390,'height':844},permissions=['geolocation'],geolocation={'latitude':52.287,'longitude':76.967})
+  ctx=browser.new_context(viewport={'width':390,'height':844},permissions=['geolocation','notifications'],geolocation={'latitude':52.287,'longitude':76.967})
   page=ctx.new_page();page.set_default_timeout(15000)
   def enable():
    page.locator('flt-semantics-placeholder, flt-semantics').first.wait_for(state='attached',timeout=30000)
@@ -112,7 +112,7 @@ try:
   member_page=page
   staff_token=call('POST','/api/auth/login',{'identifier':qa+'-partner','password':admin_password})['token']
   for origin,session_token,role in [(ADMIN,admin,'admin'),(PARTNER,staff_token,'partner')]:
-   staff_context=browser.new_context(viewport={'width':1200,'height':900})
+   staff_context=browser.new_context(viewport={'width':1200,'height':900},permissions=['notifications'])
    staff_context.add_cookies([{'name':'qm_session','value':session_token,'url':origin,'httpOnly':True,'secure':True,'sameSite':'Strict'}])
    page=staff_context.new_page();page.set_default_timeout(15000);page.goto(origin);enable()
    for reload in range(2):
@@ -157,6 +157,29 @@ try:
   page.get_by_role('tab',name='Басты бет',exact=True).wait_for();page.screenshot(path=str(out/'profile-kk.png'))
   page.get_by_role('button',name='РУС',exact=True).click();page.wait_for_timeout(600)
   checks.append({'case':'Russian/Kazakh profile switch and translated navigation','result':'PASS'})
+  # A real Chrome subscription is optional in hosted/headless environments;
+  # never substitute a mock token for confirmed FCM registration/delivery.
+  page.get_by_role('tab',name='Главная',exact=True).click();page.wait_for_timeout(1200)
+  public=call('GET','/api/push-config?platform=web')
+  assert public['enabled'] and public['options']['projectId']=='qazaqmetal-8a77b' and len(public['vapidKey'])==87
+  assert 'private_key' not in json.dumps(public)
+  worker=ctx.request.get(BASE+'/firebase-messaging-sw.js');assert worker.status==200 and 'firebase-messaging-compat.js' in worker.text()
+  config_script=ctx.request.get(BASE+'/api/push-config.js');assert config_script.status==200 and 'MUST_NOT_LEAK' not in config_script.text()
+  checks.append({'case':'Firebase web configuration and same-origin messaging worker','result':'PASS'})
+  push_devices=remote("from app.db import SessionLocal,PushDevice; from sqlalchemy import select,func; import sys,json; p=json.load(sys.stdin); db=SessionLocal(); print(json.dumps(db.scalar(select(func.count()).select_from(PushDevice).where(PushDevice.user_id==p['id'],PushDevice.platform=='web',PushDevice.active.is_(True))))); db.close()",{'id':memberid})
+  if push_devices:
+   notice_id=remote("from app.db import SessionLocal,Notification,PushDevice,PushDelivery; from sqlalchemy import select; import sys,json; p=json.load(sys.stdin); db=SessionLocal(); n=Notification(user_id=p['id'],venue_id=p['venue'],event_key=p['key'],kind='new_venue',title='QA · проверка push',title_kk='QA · push тексеру',body='Тестовое уведомление только для временной учётной записи.',body_kk='Тек уақытша аккаунтқа арналған сынақ хабарландыруы.'); db.add(n); db.flush(); [db.add(PushDelivery(notification_id=n.id,device_id=d.id)) for d in db.scalars(select(PushDevice).where(PushDevice.user_id==p['id'],PushDevice.active.is_(True)))]; db.commit(); print(json.dumps(n.id)); db.close()",{'id':memberid,'venue':venue,'key':qa+'-push'})
+   delivery_states=[]
+   for attempt in range(20):
+    page.wait_for_timeout(1500)
+    delivery_states=remote("from app.db import SessionLocal,PushDelivery; from sqlalchemy import select; import sys,json; p=json.load(sys.stdin); db=SessionLocal(); print(json.dumps(list(db.scalars(select(PushDelivery.status).where(PushDelivery.notification_id==p['id']))))); db.close()",{'id':notice_id})
+    if delivery_states and all(status=='sent' for status in delivery_states):break
+   assert delivery_states and all(status=='sent' for status in delivery_states), 'FCM did not accept QA browser delivery'
+   page.get_by_text('QA · проверка push',exact=False).first.wait_for(timeout=15000)
+   checks.append({'case':'Real Chrome FCM registration, worker delivery and foreground reception','result':'PASS'})
+   page.screenshot(path=str(out/'real-web-push.png'))
+  else:
+   checks.append({'case':'Headless Chrome did not provide an FCM token; real-device delivery still requires physical test','result':'INFO'})
   # The real Logout UI must end the PIN lifecycle; credential login must create it again.
   for _ in range(8):
    if page.get_by_text('Выйти',exact=True).count():break
