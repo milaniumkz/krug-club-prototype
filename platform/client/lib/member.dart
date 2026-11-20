@@ -1,4 +1,5 @@
 import 'i18n.dart';
+import 'push_service.dart';
 import 'date_field.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -1374,87 +1375,105 @@ class NotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const AppText('Уведомления')),
-    body: LoadView(
-      load: () => api.get('/me/notifications'),
-      builder: (data, refresh) {
-        final notices = rows(data);
-        if (notices.isEmpty) {
-          return const Empty(
-            'Здесь появятся новые акции и увеличенные скидки заведений из избранного',
-          );
-        }
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: notices
-              .map(
-                (n) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Panel(
-                    child: ListTile(
-                      leading: Icon(
-                        n['read'] == true
-                            ? Icons.notifications_none
-                            : Icons.notifications_active_outlined,
-                        color: purple,
-                      ),
-                      title: AppText(
-                        s(n[appLanguage.code == 'kk' ? 'title_kk' : 'title']),
-                      ),
-                      subtitle: AppText(
-                        s(n[appLanguage.code == 'kk' ? 'body_kk' : 'body']),
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                        try {
-                          await api.post('/me/notifications/${n['id']}/read');
-                          if (context.mounted) {
-                            if (api.user?['role'] == 'member') {
-                              await route(
-                                context,
-                                VenuePage(api: api, id: s(n['venue_id'])),
-                              );
-                            } else {
-                              await showDialog<void>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: AppText(
-                                    s(
-                                      n[appLanguage.code == 'kk'
-                                          ? 'title_kk'
-                                          : 'title'],
-                                    ),
-                                  ),
-                                  content: SingleChildScrollView(
-                                    child: AppText(
-                                      s(
-                                        n[appLanguage.code == 'kk'
-                                            ? 'body_kk'
-                                            : 'body'],
+    body: Column(
+      children: [
+        PushSettings(api: api),
+        Expanded(
+          child: LoadView(
+            load: () => api.get('/me/notifications'),
+            builder: (data, refresh) {
+              final notices = rows(data);
+              if (notices.isEmpty) {
+                return const Empty(
+                  'Здесь появятся новые акции и увеличенные скидки заведений из избранного',
+                );
+              }
+              return ListView(
+                padding: const EdgeInsets.all(20),
+                children: notices
+                    .map(
+                      (n) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Panel(
+                          child: ListTile(
+                            leading: Icon(
+                              n['read'] == true
+                                  ? Icons.notifications_none
+                                  : Icons.notifications_active_outlined,
+                              color: purple,
+                            ),
+                            title: AppText(
+                              s(
+                                n[appLanguage.code == 'kk'
+                                    ? 'title_kk'
+                                    : 'title'],
+                              ),
+                            ),
+                            subtitle: AppText(
+                              s(
+                                n[appLanguage.code == 'kk'
+                                    ? 'body_kk'
+                                    : 'body'],
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () async {
+                              try {
+                                await api.post(
+                                  '/me/notifications/${n['id']}/read',
+                                );
+                                if (context.mounted) {
+                                  if (api.user?['role'] == 'member') {
+                                    await route(
+                                      context,
+                                      VenuePage(api: api, id: s(n['venue_id'])),
+                                    );
+                                  } else {
+                                    await showDialog<void>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: AppText(
+                                          s(
+                                            n[appLanguage.code == 'kk'
+                                                ? 'title_kk'
+                                                : 'title'],
+                                          ),
+                                        ),
+                                        content: SingleChildScrollView(
+                                          child: AppText(
+                                            s(
+                                              n[appLanguage.code == 'kk'
+                                                  ? 'body_kk'
+                                                  : 'body'],
+                                            ),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: const AppText('Понятно'),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const AppText('Понятно'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          }
-                          await refresh();
-                        } catch (e) {
-                          if (context.mounted) toast(context, e);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
-        );
-      },
+                                    );
+                                  }
+                                }
+                                await refresh();
+                              } catch (e) {
+                                if (context.mounted) toast(context, e);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ),
+      ],
     ),
   );
 }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="google_app_id" translatable="false">1:360917559311:android:4fca830e9f15f2ca359b7a</string>
+  <string name="gcm_defaultSenderId" translatable="false">360917559311</string>
+  <string name="google_api_key" translatable="false">AIzaSyDDtt9gzyloqFUrEnAizy5qE_3-PV_evMQ</string>
+  <string name="project_id" translatable="false">qazaqmetal-8a77b</string>
+  <string name="google_storage_bucket" translatable="false">qazaqmetal-8a77b.firebasestorage.app</string>
+</resources>

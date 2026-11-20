@@ -195,7 +195,7 @@ def meta():
 
 
 @app.get('/api/push-config')
-def push_config(request: Request, platform: Literal['android', 'ios'] = 'android'):
+def push_config(request: Request, platform: Literal['android', 'ios', 'web'] = 'android'):
     # Client metadata is public; never expose the server service-account document.
     role = portal_role(request) or 'member'
     if role not in ('member', 'partner'):
@@ -204,11 +204,26 @@ def push_config(request: Request, platform: Literal['android', 'ios'] = 'android
         value = json.loads(os.getenv('FIREBASE_CLIENT_CONFIG', '{}')).get(role, {}).get(platform, {})
     except (ValueError, AttributeError):
         return {'enabled': False}
-    fields = ('apiKey', 'appId', 'messagingSenderId', 'projectId', 'storageBucket', 'iosBundleId')
+    fields = ('apiKey', 'appId', 'messagingSenderId', 'projectId', 'storageBucket', 'iosBundleId', 'authDomain', 'measurementId')
     public = {key:value[key] for key in fields if isinstance(value.get(key), str)} if isinstance(value, dict) else {}
     if not all(public.get(key) for key in fields[:4]):
         return {'enabled': False}
-    return {'enabled': True, 'options': public}
+    result = {'enabled': True, 'options': public}
+    if platform == 'web':
+        vapid = os.getenv('FIREBASE_WEB_VAPID_KEY', '')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{87}', vapid):
+            return {'enabled': False}
+        result['vapidKey'] = vapid
+    return result
+
+
+@app.get('/api/push-config.js')
+def push_worker_config(request: Request):
+    config = push_config(request, 'web')
+    # importScripts requires synchronous, same-origin configuration. Values are
+    # JSON-encoded client metadata only, never the service-account document.
+    script = 'self.QM_FIREBASE_CONFIG=' + json.dumps(config, ensure_ascii=True) + ';'
+    return Response(script, media_type='application/javascript', headers={'Cache-Control': 'no-store'})
 
 
 @app.post('/api/auth/login')

@@ -67,6 +67,8 @@ data["CFBundleDisplayName"] = "QAZAQMETAL Партнёр"
 data["CFBundleName"] = "qzm_partner"
 with info.open("wb") as f:
     plistlib.dump(data, f)
+from configure_firebase_native import configure
+configure(target, 'partner')
 if a.android_signing_file:
     shutil.copy2(a.android_signing_file.resolve(), target / "android/key.properties")
 if a.prepare_only:

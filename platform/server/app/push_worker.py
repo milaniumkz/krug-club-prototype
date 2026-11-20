@@ -10,6 +10,22 @@ from sqlalchemy import select
 from .db import Notification, Organization, PushDelivery, PushDevice, SessionLocal, User, now
 
 
+def message_for(notice, device, user):
+    kk = device.language == 'kk'
+    host = os.getenv('PARTNER_HOST' if user.role == 'partner' else 'MEMBER_HOST', '')
+    if not host or '/' in host or ':' in host:
+        raise ValueError('Configure the public push portal host')
+    link = 'https://' + host + '/?notification=' + notice.id
+    return {'token': device.token,
+        'notification': {'title': notice.title_kk if kk else notice.title,
+                         'body': notice.body_kk if kk else notice.body},
+        'data': {'venue_id': notice.venue_id, 'notification_id': notice.id, 'kind': notice.kind},
+        'android': {'notification': {'channel_id': 'partner_updates' if user.role == 'partner' else 'union_updates' if notice.kind == 'new_venue' else 'favorite_offers'}},
+        'apns': {'payload': {'aps': {'sound': 'default'}}},
+        'webpush': {'headers': {'TTL': '86400'}, 'fcm_options': {'link': link},
+                    'notification': {'icon': 'https://' + host + '/icons/Icon-192.png', 'tag': notice.id}}}
+
+
 def main():
     key = Path(os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/run/secrets/firebase_admin.json'))
     if not key.is_file():
@@ -21,7 +37,13 @@ def main():
     endpoint = 'https://fcm.googleapis.com/v1/projects/'+config['project_id']+'/messages:send'
     while True:
         if not credentials.valid:
-            credentials.refresh(Request())
+            try:
+                credentials.refresh(Request())
+            except Exception:
+                # No exception/response text: OAuth errors may include sensitive metadata.
+                print('Push OAuth unavailable; retrying in 30 seconds', flush=True)
+                time.sleep(30)
+                continue
         with SessionLocal() as db:
             deliveries = db.scalars(select(PushDelivery).where(
                 PushDelivery.status.in_(['pending', 'retry', 'sending']), PushDelivery.next_attempt_at <= now())
@@ -40,11 +62,7 @@ def main():
                 delivery.status = 'sending'
                 delivery.attempts += 1
                 delivery.next_attempt_at = now()+timedelta(minutes=5)
-                kk = device.language == 'kk'
-                message = {'token':device.token, 'notification':{'title':notice.title_kk if kk else notice.title, 'body':notice.body_kk if kk else notice.body},
-                    'data':{'venue_id':notice.venue_id,'notification_id':notice.id,'kind':notice.kind},
-                    'android':{'notification':{'channel_id':'partner_updates' if user.role == 'partner' else 'union_updates' if notice.kind == 'new_venue' else 'favorite_offers'}},
-                    'apns':{'payload':{'aps':{'sound':'default'}}}}
+                message = message_for(notice, device, user)
                 work.append((delivery.id, message))
             db.commit()
         def send(item):
@@ -65,6 +83,8 @@ def main():
         with SessionLocal() as db:
             for delivery_id, status, invalid in results:
                 delivery = db.get(PushDelivery, delivery_id)
+                if delivery.status == 'cancelled':
+                    continue
                 if 200 <= status < 300:
                     delivery.status = 'sent'
                     delivery.last_error = ''
@@ -72,10 +92,12 @@ def main():
                     delivery.status = 'cancelled'
                     db.get(PushDevice, delivery.device_id).active = False
                 else:
-                    delivery.status = 'failed' if delivery.attempts >= 8 else 'retry'
+                    delivery.status = 'failed' if delivery.attempts >= 8 or status in (400, 401, 403) else 'retry'
                     delivery.last_error = 'HTTP_'+str(status)
                     delivery.next_attempt_at = now()+timedelta(seconds=min(3600, 2**delivery.attempts*10))
             db.commit()
+        if results:
+            print('Push batch processed: ' + str(len(results)) + '; accepted: ' + str(sum(200 <= r[1] < 300 for r in results)), flush=True)
         if not work:
             time.sleep(3)
 

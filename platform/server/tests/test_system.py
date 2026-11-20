@@ -337,7 +337,7 @@ def test_all_protected_routes_reject_anonymous_access(world):
     for route in app.routes:
         if not isinstance(route,APIRoute) or not route.path.startswith('/api/'):
             continue
-        if route.path in ('/api/auth/login','/api/health','/api/meta','/api/map-style','/api/push-config'):
+        if route.path in ('/api/auth/login','/api/health','/api/meta','/api/map-style','/api/push-config','/api/push-config.js'):
             continue
         path=route.path
         for parameter in route.param_convertors:

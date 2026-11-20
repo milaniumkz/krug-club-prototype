@@ -1,5 +1,8 @@
-FROM qazaqmetal-api:latest
-USER root
-RUN pip install --no-cache-dir -r /app/requirements-push.txt
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY server/requirements.lock server/requirements-push.txt /app/
+RUN pip install --no-cache-dir -r requirements.lock -r requirements-push.txt && useradd -u 10001 -m appuser
+COPY server/app /app/app
 USER appuser
 CMD ["python", "-m", "app.push_worker"]

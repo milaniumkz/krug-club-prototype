@@ -12,6 +12,7 @@
         android:usesCleartextTraffic="false"
         android:name="${applicationName}"
         android:icon="@drawable/ic_qazaqmetal">
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="union_updates"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

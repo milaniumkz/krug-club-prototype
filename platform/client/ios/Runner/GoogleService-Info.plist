@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBnbLrU-rNXu3j7s-c5BlOpNWMLUgmGCmE</string>
+	<key>BUNDLE_ID</key>
+	<string>kz.qazaqmetal.qazaqmetal</string>
+	<key>GCM_SENDER_ID</key>
+	<string>360917559311</string>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:360917559311:ios:e0f7ae0d114d9c25359b7a</string>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>PROJECT_ID</key>
+	<string>qazaqmetal-8a77b</string>
+	<key>STORAGE_BUCKET</key>
+	<string>qazaqmetal-8a77b.firebasestorage.app</string>
+</dict>
+</plist>

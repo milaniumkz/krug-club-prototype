@@ -21,9 +21,9 @@ class Protection:
             'X-Frame-Options': 'DENY',
             'Permissions-Policy': 'camera=(self), geolocation=(self), microphone=()',
             'Content-Security-Policy': (
-                "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; "
+                "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; "
                 f"img-src 'self' data: blob: {tile_origin} https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.tile.openstreetmap.fr https://tiles.openfreemap.org; "
-                f"connect-src 'self' blob: {tile_origin} https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.tile.openstreetmap.fr https://tiles.openfreemap.org; "
+                f"connect-src 'self' blob: https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com https://fcm.googleapis.com https://www.googleapis.com {tile_origin} https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.tile.openstreetmap.fr https://tiles.openfreemap.org; "
                 "font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; media-src 'self' blob:; "
             ),
         }
@@ -37,7 +37,7 @@ class Protection:
         request = Request(scope)
         path = scope['path']
         cache = 'no-store' if path.startswith('/api/') else (
-            'no-cache' if path in ('/', '/index.html', '/flutter_bootstrap.js', '/version.json') else None)
+            'no-cache' if path in ('/', '/index.html', '/flutter_bootstrap.js', '/version.json', '/firebase-messaging-sw.js') else None)
         headers = self.encoded + ([(b'cache-control', cache.encode())] if cache else [])
         replaced = {name for name, _ in headers}
 

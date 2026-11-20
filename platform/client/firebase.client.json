@@ -1,0 +1,52 @@
+{
+  "member": {
+    "android": {
+      "apiKey": "AIzaSyDDtt9gzyloqFUrEnAizy5qE_3-PV_evMQ",
+      "appId": "1:360917559311:android:4fca830e9f15f2ca359b7a",
+      "messagingSenderId": "360917559311",
+      "projectId": "qazaqmetal-8a77b",
+      "storageBucket": "qazaqmetal-8a77b.firebasestorage.app"
+    },
+    "ios": {
+      "apiKey": "AIzaSyBnbLrU-rNXu3j7s-c5BlOpNWMLUgmGCmE",
+      "appId": "1:360917559311:ios:e0f7ae0d114d9c25359b7a",
+      "messagingSenderId": "360917559311",
+      "projectId": "qazaqmetal-8a77b",
+      "storageBucket": "qazaqmetal-8a77b.firebasestorage.app",
+      "iosBundleId": "kz.qazaqmetal.qazaqmetal"
+    },
+    "web": {
+      "apiKey": "AIzaSyCDj0HhntClCglXYyl-YE0vpr7yoKjASJs",
+      "appId": "1:360917559311:web:78564b753c133589359b7a",
+      "messagingSenderId": "360917559311",
+      "projectId": "qazaqmetal-8a77b",
+      "authDomain": "qazaqmetal-8a77b.firebaseapp.com",
+      "storageBucket": "qazaqmetal-8a77b.firebasestorage.app"
+    }
+  },
+  "partner": {
+    "android": {
+      "apiKey": "AIzaSyDDtt9gzyloqFUrEnAizy5qE_3-PV_evMQ",
+      "appId": "1:360917559311:android:f43fcef6afabf33b359b7a",
+      "messagingSenderId": "360917559311",
+      "projectId": "qazaqmetal-8a77b",
+      "storageBucket": "qazaqmetal-8a77b.firebasestorage.app"
+    },
+    "ios": {
+      "apiKey": "AIzaSyBnbLrU-rNXu3j7s-c5BlOpNWMLUgmGCmE",
+      "appId": "1:360917559311:ios:640ffebcbb619b47359b7a",
+      "messagingSenderId": "360917559311",
+      "projectId": "qazaqmetal-8a77b",
+      "storageBucket": "qazaqmetal-8a77b.firebasestorage.app",
+      "iosBundleId": "kz.qazaqmetal.qazaqmetal.partner"
+    },
+    "web": {
+      "apiKey": "AIzaSyCDj0HhntClCglXYyl-YE0vpr7yoKjASJs",
+      "appId": "1:360917559311:web:f0365efb3eaa5ef4359b7a",
+      "messagingSenderId": "360917559311",
+      "projectId": "qazaqmetal-8a77b",
+      "authDomain": "qazaqmetal-8a77b.firebaseapp.com",
+      "storageBucket": "qazaqmetal-8a77b.firebasestorage.app"
+    }
+  }
+}

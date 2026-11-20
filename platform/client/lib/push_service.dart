@@ -1,42 +1,59 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api.dart';
 import 'i18n.dart';
 
-/// No prompts or Firebase startup until the owner configures a client project.
-class PushService {
+/// One service per signed-in app; web permissions are requested on a user tap.
+class PushService extends ChangeNotifier {
+  static PushService? current;
   final Api api;
   final void Function(String) onForeground;
   bool busy = false, initialized = false, listened = false;
-  String? registered;
+  String? registered, vapidKey;
+  String status = 'Включите уведомления о новых заведениях и предложениях';
+  bool pendingOpen = Uri.base.queryParameters.containsKey('notification');
   PushService(this.api, {required this.onForeground});
+  String get platform => kIsWeb
+      ? 'web'
+      : defaultTargetPlatform == TargetPlatform.iOS
+      ? 'ios'
+      : 'android';
   void start() {
-    if (kIsWeb) {
-      return;
-    } // Browser inbox is available; Web Push requires VAPID later.
+    current = this;
     api.addListener(sync);
     appLanguage.addListener(sync);
     unawaited(sync());
   }
 
-  Future<void> sync() async {
+  Future<void> sync({bool requestPermission = false}) async {
     if (api.user == null) {
       registered = null;
       onForeground('');
       return;
     }
-    if (busy || api.user!['must_change_password'] == true) return;
+    if (api.user!['role'] == 'admin' ||
+        busy ||
+        api.user!['must_change_password'] == true) {
+      return;
+    }
     final owner = s(api.user!['id']);
     busy = true;
+    if (pendingOpen) {
+      pendingOpen = false;
+      api.openNotifications();
+    }
     try {
       if (!initialized) {
-        final config = await api.get(
-          '/push-config?platform=${defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android'}',
-        );
-        if (config['enabled'] != true) return;
+        final config = await api.get('/push-config?platform=$platform');
+        if (config['enabled'] != true) {
+          status = 'Уведомления пока не подключены';
+          return;
+        }
         final d = Json.from(config['options'] as Map);
+        vapidKey = config['vapidKey'] as String?;
         await Firebase.initializeApp(
           options: FirebaseOptions(
             apiKey: s(d['apiKey']),
@@ -45,15 +62,21 @@ class PushService {
             projectId: s(d['projectId']),
             storageBucket: d['storageBucket'] as String?,
             iosBundleId: d['iosBundleId'] as String?,
+            authDomain: d['authDomain'] as String?,
           ),
         );
         initialized = true;
+      }
+      if (!await FirebaseMessaging.instance.isSupported()) {
+        status =
+            'Этот браузер не поддерживает push. Центр уведомлений доступен';
+        return;
       }
       if (!listened) {
         listened = true;
         FirebaseMessaging.instance.onTokenRefresh.listen((_) {
           registered = null;
-          sync();
+          unawaited(sync());
         });
         FirebaseMessaging.onMessage.listen((message) {
           if (api.user == null) return;
@@ -65,35 +88,96 @@ class PushService {
           );
         });
         FirebaseMessaging.onMessageOpenedApp.listen((_) {
-          if (api.user != null) api.openNotifications();
+          if (api.user != null) {
+            api.openNotifications();
+          } else {
+            pendingOpen = true;
+          }
         });
         final initial = await FirebaseMessaging.instance.getInitialMessage();
         if (initial != null) api.openNotifications();
       }
-      final permission = await FirebaseMessaging.instance.requestPermission();
-      if (permission.authorizationStatus == AuthorizationStatus.denied) return;
-      await FirebaseMessaging.instance
-          .setForegroundNotificationPresentationOptions(
-            alert: false,
-            badge: true,
-            sound: true,
-          );
-      final token = await FirebaseMessaging.instance.getToken();
+      var permission = await FirebaseMessaging.instance
+          .getNotificationSettings();
+      if (permission.authorizationStatus == AuthorizationStatus.notDetermined &&
+          (!kIsWeb || requestPermission)) {
+        permission = await FirebaseMessaging.instance.requestPermission();
+      }
+      if (permission.authorizationStatus == AuthorizationStatus.denied) {
+        status = 'Разрешите уведомления в настройках устройства или браузера';
+        return;
+      }
+      if (permission.authorizationStatus == AuthorizationStatus.notDetermined) {
+        return;
+      }
+      if (!kIsWeb) {
+        await FirebaseMessaging.instance
+            .setForegroundNotificationPresentationOptions(
+              alert: false,
+              badge: true,
+              sound: true,
+            );
+        if (platform == 'ios' &&
+            await FirebaseMessaging.instance.getAPNSToken() == null) {
+          status = 'Push для iOS будет доступен после подключения APNs';
+          return;
+        }
+      }
+      final token = await FirebaseMessaging.instance.getToken(
+        vapidKey: vapidKey,
+      );
       if (token == null || api.user?['id'] != owner) return;
       final key = '$owner:${appLanguage.code}:$token';
-      if (registered == key) return;
-      await api.post('/me/push-devices', {
-        'token': token,
-        'platform': defaultTargetPlatform == TargetPlatform.iOS
-            ? 'ios'
-            : 'android',
-        'language': appLanguage.code,
-      });
-      registered = key;
+      if (registered != key) {
+        await api.post('/me/push-devices', {
+          'token': token,
+          'platform': platform,
+          'language': appLanguage.code,
+        });
+        registered = key;
+      }
+      status = 'Уведомления включены на этом устройстве';
     } catch (_) {
-      // A missing project, denied permission or offline device must not prevent login.
+      status = 'Не удалось подключить уведомления. Попробуйте ещё раз';
     } finally {
       busy = false;
+      notifyListeners();
     }
+  }
+}
+
+class PushSettings extends StatelessWidget {
+  final Api api;
+  const PushSettings({super.key, required this.api});
+  @override
+  Widget build(BuildContext context) {
+    final service = PushService.current;
+    if (service == null || api.user?['role'] == 'admin') {
+      return const SizedBox.shrink();
+    }
+    return ListenableBuilder(
+      listenable: service,
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppText(service.status, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: service.busy
+                  ? null
+                  : () => service.sync(requestPermission: true),
+              icon: const Icon(Icons.notifications_active_outlined),
+              label: AppText(
+                service.registered == null
+                    ? 'Включить уведомления'
+                    : 'Проверить подключение',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
