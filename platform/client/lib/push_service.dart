@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api.dart';
+import 'firebase_web_loader.dart';
 import 'i18n.dart';
 
 /// One service per signed-in app; web permissions are requested on a user tap.
@@ -54,6 +55,7 @@ class PushService extends ChangeNotifier {
         }
         final d = Json.from(config['options'] as Map);
         vapidKey = config['vapidKey'] as String?;
+        await prepareFirebaseWeb();
         await Firebase.initializeApp(
           options: FirebaseOptions(
             apiKey: s(d['apiKey']),

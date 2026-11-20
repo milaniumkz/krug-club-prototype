@@ -8,7 +8,8 @@ One Firebase project (`qazaqmetal-8a77b`), independent member/partner registrati
 - Client configuration and public VAPID key: protected server `.env`, `FIREBASE_CLIENT_CONFIG` / `FIREBASE_WEB_VAPID_KEY`.
 - `compose.push.yaml` profile `push` starts the FCM HTTPv1 transactional outbox worker. The overlay and profile are retained in the production `.env` for subsequent deployments.
 - Public `/api/push-config` selects role from the portal host and platform from `android|ios|web`. Admin is disabled. `/api/push-config.js` exposes only whitelisted web-client metadata for the service worker.
-- Firebase service worker: `/firebase-messaging-sw.js`, same-origin pinned Firebase compat10.12.5 libraries. Background messages use FCM standard display, one notification per delivery; clicks use a server-generated same-origin HTTPS link. Foreground messages show an in-app notification.
+- Lazy SDK loader: `firebase-loader.js` loads modular SDK12.12.0 without inline script injection; CSP remains strict.
+- Firebase service worker: `/firebase-messaging-sw.js`, same-origin pinned Firebase compat12.12.0 libraries. Background messages use FCM standard display, one notification per delivery; clicks use a server-generated same-origin HTTPS link. Foreground messages show an in-app notification.
 - The Firebase SDK is pinned to stable Firebase Messaging16/core4, using classic FCM registration tokens compatible with the HTTPv1 sender.
 
 ## Audiences
