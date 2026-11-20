@@ -4,8 +4,8 @@ from pathlib import Path
 import paramiko
 HOST='109.235.119.144';DOMAIN='qazaqmetal.109.235.119.144.sslip.io'
 EXPECTED='SHA256:Bt3HkaktjLmWe4tB1pOK9b8gOnHuxp+tvp1hhEDtxp8'
-PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-2.3.0-2026-11-19/QazaqMetal_full_project.zip'
-SHA='7d2622551ca89bdec429e7cfa383d6ebeb580b04062fe98df1099bc3e97afe91'
+PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-2.3.1-2026-11-20/QazaqMetal_full_project.zip'
+SHA='220ade060b560d23a2b00f1b09ada13062241d2f6734b8607c66b3d53fde84c3'
 ASSETS_PACKAGE='https://github.com/milaniumkz/krug-club-prototype/releases/download/qazaqmetal-2.2.1-2026-11-18/QazaqMetal_demo_assets.zip'
 ASSETS_SHA='f182e31a8f08045d9b4074cc87c08a33d013992e0e0afbcd3e975f2c7cbe6941'
 password=os.environ.pop('DEPLOY_SSH_PASSWORD','')
