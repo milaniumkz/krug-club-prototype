@@ -180,6 +180,7 @@ try:
    page.screenshot(path=str(out/'real-web-push.png'))
   else:
    checks.append({'case':'Headless Chrome did not provide an FCM token; real-device delivery still requires physical test','result':'INFO'})
+  page.get_by_role('tab',name='Профиль',exact=True).click();page.wait_for_timeout(500)
   # The real Logout UI must end the PIN lifecycle; credential login must create it again.
   for _ in range(8):
    if page.get_by_text('Выйти',exact=True).count():break
