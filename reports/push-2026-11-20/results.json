@@ -1,0 +1,436 @@
+{
+  "url": "https://qazaqmetal.109.235.119.144.sslip.io",
+  "checks": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/main.dart.js",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "account": "01",
+      "personal_password": "preserved"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog",
+      "http_status": 428,
+      "result": "PASS"
+    },
+    {
+      "account": "partner01",
+      "personal_password": "preserved"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/workspace/resources",
+      "http_status": 428,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/organizations",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/accounts",
+      "http_status": 201,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog",
+      "http_status": 428,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/password",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/sessions",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/f95f06c1-8b65-4717-8fd3-5b2e0a536fdd",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/media/ff25c8512200b909515d4aea11d85e0b.webp",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/scan",
+      "http_status": 404,
+      "result": "PASS"
+    },
+    {
+      "case": "Previously issued demo QR was replaced by its owner; current QR preserved",
+      "result": "INFO",
+      "venue": "f95f06c1-8b65-4717-8fd3-5b2e0a536fdd"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/5e8d0f04-9ccf-4ca7-a718-7f1cab0484b8",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/media/8cb87028e2d4aa749b613bbd9d6882e5.webp",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/scan",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/scan",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/banners",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/media/c861206f6f1ca8f7955ddcc1eef7e630.webp",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/media/5509dbab693e46e3591a9ec196bad1f2.webp",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog?west=76.9&east=77.1&south=52.2&north=52.4",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/me/favorites/f95f06c1-8b65-4717-8fd3-5b2e0a536fdd",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/me/favorites/f95f06c1-8b65-4717-8fd3-5b2e0a536fdd",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog?favorites_only=true",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/favorites/f95f06c1-8b65-4717-8fd3-5b2e0a536fdd",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/history",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/map-style?lang=ru",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/map-style?lang=kk",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/scan",
+      "http_status": 400,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/scan",
+      "http_status": 404,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/accounts",
+      "http_status": 403,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/tickets",
+      "http_status": 201,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/tickets/af9198d2-bb75-4cf6-88ef-279bf6447499",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/workspace/stats",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/accounts/831aa16c-0c09-4789-b351-578b861ee57f/reset-password",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "case": "admin portal opens after browser reload without PIN",
+      "result": "PASS"
+    },
+    {
+      "case": "admin mobile layout 390px",
+      "result": "PASS"
+    },
+    {
+      "case": "admin mobile layout 320px",
+      "result": "PASS"
+    },
+    {
+      "case": "partner portal opens after browser reload without PIN",
+      "result": "PASS"
+    },
+    {
+      "case": "partner mobile layout 390px",
+      "result": "PASS"
+    },
+    {
+      "case": "partner mobile layout 320px",
+      "result": "PASS"
+    },
+    {
+      "case": "first password with six characters, PIN setup and saved-session PIN unlock",
+      "result": "PASS"
+    },
+    {
+      "screen": "Партнёры",
+      "result": "PASS"
+    },
+    {
+      "screen": "На карте",
+      "result": "PASS"
+    },
+    {
+      "screen": "QR",
+      "result": "PASS"
+    },
+    {
+      "screen": "Профиль",
+      "result": "PASS"
+    },
+    {
+      "screen": "Главная",
+      "result": "PASS"
+    },
+    {
+      "case": "Russian/Kazakh profile switch and translated navigation",
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/push-config?platform=web",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "case": "Firebase web configuration and same-origin messaging worker",
+      "result": "PASS"
+    },
+    {
+      "case": "Headless Chrome did not provide an FCM token; real-device delivery still requires physical test",
+      "result": "INFO",
+      "firebase_http": [
+        {
+          "host": "www.gstatic.com",
+          "status": 200
+        },
+        {
+          "host": "www.gstatic.com",
+          "status": 200
+        },
+        {
+          "host": "www.gstatic.com",
+          "status": 200
+        },
+        {
+          "host": "www.gstatic.com",
+          "status": 200
+        }
+      ],
+      "firebase_network_failures": [],
+      "worker_states": [
+        "activated"
+      ]
+    },
+    {
+      "case": "Notification permission/retry button and inbox at 320/390px",
+      "result": "PASS"
+    },
+    {
+      "case": "logout button clears PIN; credential re-login creates a different new PIN",
+      "result": "PASS"
+    },
+    {
+      "viewport": [
+        320,
+        640
+      ],
+      "result": "PASS"
+    },
+    {
+      "viewport": [
+        430,
+        932
+      ],
+      "result": "PASS"
+    },
+    {
+      "viewport": [
+        768,
+        1024
+      ],
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/accounts/831aa16c-0c09-4789-b351-578b861ee57f/status",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "case": "idle browser forced logout on dismissal",
+      "seconds": 0.624,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/accounts/831aa16c-0c09-4789-b351-578b861ee57f/status",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 401,
+      "result": "PASS"
+    }
+  ],
+  "physical_camera_tested": false,
+  "test_accounts_removed": true
+}
