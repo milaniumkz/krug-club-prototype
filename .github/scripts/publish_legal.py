@@ -45,7 +45,7 @@ try:
             sftp.put('.github/scripts/seed_store_review.py', '/opt/qazaqmetal/incoming/seed_store_review.py')
         command('cd /opt/qazaqmetal/current && docker compose cp /opt/qazaqmetal/incoming/seed_store_review.py api:/tmp/seed_store_review.py')
         print(command('cd /opt/qazaqmetal/current && docker compose exec -T api python /tmp/seed_store_review.py', os.environ.pop('STORE_REVIEW_CREDENTIALS').encode()))
-        command('cd /opt/qazaqmetal/current && docker compose exec -T api rm /tmp/seed_store_review.py')
+        command('cd /opt/qazaqmetal/current && docker compose exec -T -u 0 api rm /tmp/seed_store_review.py')
         raise SystemExit(0)
     command('install -d -m 755 /opt/qazaqmetal/current/legal /opt/qazaqmetal/current/web/legal')
     with paramiko.SFTPClient.from_transport(transport) as sftp:
