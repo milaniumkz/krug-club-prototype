@@ -1,0 +1,31 @@
+# App Review — 2.4.0 (22)
+
+## Purpose and audience
+
+QMET+ is a trade-union member benefits service. The member app provides a digital membership card, participating venue and benefit information, favorites, a map, QR verification, usage history, support and notifications. QMET+ Partner is the companion app for approved participating businesses: venue and benefit management, banners, QR display, moderation notifications and usage summaries. These are benefits relating to physical venues and services, not digital content purchases. Neither app processes payments, sells subscriptions or contains paid digital features.
+
+Public download is requested for both apps. Access to member benefits requires an eligible account supplied by a participating organization; partner access requires approval by the operator. There is no self-service account registration in either app. These are not tools for employee HR management, banking, investment or medical services.
+
+## Reviewer access
+
+Use the permanent credentials in the App Review Information username/password fields. Member username: `QMETREVIEW2026`; partner username: `qmet-review-partner-2026`. No invitation, SMS, purchase or organization-code entry is needed in the submitted native login screens. If another client requests an organization code, use `STORE_REVIEW`.
+
+After the first successful sign-in, create and confirm your own six-digit device-local PIN. On subsequent launches enter that PIN. It is not an SMS code and is not supplied by the operator. If forgotten, use the sign-in-again option and the supplied credentials. Biometric access is optional. Camera, location and notification permissions can be denied without preventing browsing.
+
+The accounts use an isolated demonstration organization and venue. Demo offers are clearly labeled and do not promise real discounts. No personal membership details or real-user records are needed for review.
+
+## Typical flows
+
+Member: launch → sign in → set local PIN → home/membership card → catalogue → demo venue and benefit details → save favorite → map → notifications → profile, history and support. Profile contains a personal-data deletion request; it is routed to the operator for handling. Account creation is not offered in the app.
+
+Partner: launch → sign in → set local PIN → overview → venues → demo venue details/edit form and QR → banners → notifications → profile/support. Partner submissions are moderated by the operator before publication. There is no public social feed, public chat or member-to-member content publishing. Support messages are private; members can report problematic venue content through support. Moderators can reject content and disable partner access.
+
+## Services and regional behavior
+
+Core data and authentication use the operator's HTTPS REST API and PostgreSQL database; passwords are verified by that backend. Native sessions/PIN are stored using the device's protected storage. Firebase Cloud Messaging and Apple APNs deliver optional push notifications. Maps use OpenFreeMap/OpenStreetMap data; the device camera supports QR scanning and the system photo picker supports partner images. No social sign-in, AI service, payment gateway or advertising identifier SDK is used for core functionality.
+
+Features operate consistently across enabled storefronts. Russian and Kazakh UI languages are available. Venue visibility and benefit eligibility depend on the account's organization, membership status and participating partners, rather than the App Store country. France is excluded from distribution at the owner's request.
+
+## Required submission evidence
+
+Apple's 21 November request additionally requires physical-device recordings beginning with app launch and demonstrating the flows above. Attach or link the completed recordings in App Review Notes before resubmitting. Include available permission documentation for the protected QAZAQMETAL logo and supplied venue materials; the owner confirmed authorization, but a signed third-party letter must not be invented.
