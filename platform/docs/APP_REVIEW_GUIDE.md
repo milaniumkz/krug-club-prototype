@@ -28,4 +28,6 @@ Features operate consistently across enabled storefronts. Russian and Kazakh UI 
 
 ## Required submission evidence
 
-Apple's 21 November request additionally requires physical-device recordings beginning with app launch and demonstrating the flows above. Attach or link the completed recordings in App Review Notes before resubmitting. Include available permission documentation for the protected QAZAQMETAL logo and supplied venue materials; the owner confirmed authorization, but a signed third-party letter must not be invented.
+Apple's 21 November request additionally requires physical-device recordings beginning with app launch and demonstrating the flows above. Attach or link the completed recordings in App Review Notes before resubmitting.
+
+The owner instructed us to explain that QAZAQMETAL is the client commissioning the apps, access/use of its branding and supplied materials is authorized, and all necessary supporting documents can be provided upon request. This statement is saved in both apps' review notes. No signed authorization document has been supplied or represented as attached.
