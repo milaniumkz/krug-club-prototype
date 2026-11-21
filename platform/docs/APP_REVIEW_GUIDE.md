@@ -28,6 +28,6 @@ Features operate consistently across enabled storefronts. Russian and Kazakh UI 
 
 ## Required submission evidence
 
-Apple's 21 November request additionally requires physical-device recordings beginning with app launch and demonstrating the flows above. Attach or link the completed recordings in App Review Notes before resubmitting.
+Both physical-device walkthroughs are attached in App Review Information and finished processing (COMPLETE): `QMETplus_member_physical_iPhone_build22.mp4` and `QMETplus_partner_physical_iPhone_build22.mp4`. They capture the real iPhone display through iPhone Mirroring, begin before launch, and show the existing-session main flows. PIN entry, the private system location preview and idle pauses are omitted. First-login instructions remain above; reviewers should use the supplied credentials and create their own local PIN. No simulated app screens are used. Both versions were resubmitted on 21 November 2026 at 13:16 Asia/Almaty and are waiting for review.
 
 The owner instructed us to explain that QAZAQMETAL is the client commissioning the apps, access/use of its branding and supplied materials is authorized, and all necessary supporting documents can be provided upon request. This statement is saved in both apps' review notes. No signed authorization document has been supplied or represented as attached.
