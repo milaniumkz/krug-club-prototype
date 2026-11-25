@@ -45,6 +45,7 @@ class User(Base):
     employee_number: Mapped[str | None] = mapped_column(String(80), index=True)
     phone: Mapped[str | None] = mapped_column(String(20), index=True)
     name: Mapped[str] = mapped_column(String(240))
+    avatar_path: Mapped[str | None] = mapped_column(String(80))
     role: Mapped[str] = mapped_column(String(20), default='member')
     status: Mapped[str] = mapped_column(String(20), default='active')
     status_reason: Mapped[str] = mapped_column(String(1000), default='')

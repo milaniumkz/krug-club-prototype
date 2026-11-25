@@ -4,6 +4,7 @@ import 'remote_settings_ui.dart';
 import 'push_service.dart';
 import 'date_field.dart';
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'api.dart';
 import 'ui.dart';
@@ -218,16 +219,146 @@ class _MemberShellState extends State<MemberShell> {
   }
 }
 
-class ClubCard extends StatelessWidget {
+Future<void> pickMemberPhoto(BuildContext context, Api api) async {
+  try {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1400,
+      maxHeight: 1400,
+      imageQuality: 90,
+    );
+    if (photo == null) return;
+    await api.updateAvatar(photo);
+    if (context.mounted) toast(context, 'Фото сохранено');
+  } catch (e) {
+    if (context.mounted) toast(context, e);
+  }
+}
+
+class MemberAvatar extends StatelessWidget {
+  final Api api;
   final Json user;
-  const ClubCard({super.key, required this.user});
+  final double size;
+  final VoidCallback? onTap;
+  const MemberAvatar({
+    super.key,
+    required this.api,
+    required this.user,
+    this.size = 80,
+    this.onTap,
+  });
   @override
   Widget build(BuildContext context) {
+    final words = s(
+      user['name'],
+    ).trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final initials = words
+        .take(2)
+        .map((w) => w.characters.first)
+        .join()
+        .toUpperCase();
+    final fallback = ColoredBox(
+      color: const Color(0xffeee3f8),
+      child: Center(
+        child: Text(
+          initials.isEmpty ? 'Q+' : initials,
+          style: TextStyle(
+            fontSize: size * .31,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xff54258d),
+          ),
+        ),
+      ),
+    );
+    final path = s(user['avatar_path']);
+    final picture = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: .8), width: 3),
+      ),
+      child: ClipOval(
+        child: path.isEmpty
+            ? fallback
+            : Image.network(
+                '${api.base}$path',
+                headers: api.headers,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                cacheWidth: (size * 3).round(),
+                errorBuilder: (_, error, stack) => fallback,
+              ),
+      ),
+    );
+    return Semantics(
+      label: tx(onTap == null ? 'Фото участника' : 'Изменить фото'),
+      image: onTap == null,
+      button: onTap != null,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: onTap == null
+          ? picture
+          : Tooltip(
+              message: tx('Изменить фото'),
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkResponse(
+                  onTap: onTap,
+                  customBorder: const CircleBorder(),
+                  radius: size / 2,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      picture,
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xff6e2ebd),
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.photo_camera_outlined,
+                            color: Colors.white,
+                            size: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class ClubCard extends StatelessWidget {
+  final Json user;
+  final Api api;
+  const ClubCard({super.key, required this.user, required this.api});
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: api,
+    builder: (context, _) =>
+        buildCard(context, api.user?['id'] == user['id'] ? api.user! : user),
+  );
+  Widget buildCard(BuildContext context, Json user) {
     SettingsScope.watch(context);
     return Container(
-      constraints: const BoxConstraints(minHeight: 190),
+      key: const ValueKey('participant-club-card'),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [Color(0xfff3eaf8), Color(0xffd5bce9), Color(0xffb18ad5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x307133bd),
@@ -240,53 +371,23 @@ class ClubCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xfff2e6f3),
-                      Color(0xffc7a6df),
-                      Color(0xff9165ba),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-            ),
             Positioned(
-              right: -70,
-              top: -75,
+              right: -88,
+              top: -122,
               child: Container(
-                width: 240,
-                height: 310,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: .09),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: .45),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              right: -102,
-              top: -85,
-              child: Container(
-                width: 240,
-                height: 310,
+                width: 260,
+                height: 260,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: .2),
-                    width: 16,
+                    color: Colors.white.withValues(alpha: .22),
+                    width: 32,
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -299,39 +400,83 @@ class ClubCard extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             child: AppText(
                               'QMET+',
-                              style: titleStyle(26).copyWith(letterSpacing: 2),
+                              style: titleStyle(
+                                25,
+                              ).copyWith(letterSpacing: 1.8),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 14),
                       const Icon(
-                        Icons.contactless_outlined,
-                        color: Colors.white,
-                        size: 32,
+                        Icons.verified_outlined,
+                        size: 23,
+                        color: Color(0xff663799),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   const AppText(
                     'Карта члена профсоюза',
-                    style: TextStyle(color: ink, fontSize: 12),
+                    style: TextStyle(color: Color(0xff5b426c), fontSize: 11),
                   ),
-                  const SizedBox(height: 29),
-                  AppText(
-                    s(user['name']),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: ink,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  AppText(
-                    'Табельный № ${s(user['employee_number'])}',
-                    style: const TextStyle(color: ink, fontSize: 12),
+                  const SizedBox(height: 22),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final narrow = constraints.maxWidth < 280;
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          MemberAvatar(
+                            api: api,
+                            user: user,
+                            size: narrow ? 64 : 82,
+                            onTap: api.user?['id'] == user['id']
+                                ? () => pickMemberPhoto(context, api)
+                                : null,
+                          ),
+                          SizedBox(width: narrow ? 12 : 17),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  s(user['name']),
+                                  key: const ValueKey('participant-full-name'),
+                                  style: TextStyle(
+                                    fontFamily: 'Georgia',
+                                    fontSize: narrow ? 18 : 21,
+                                    height: 1.22,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xff281933),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const AppText(
+                                  'Табельный номер',
+                                  style: TextStyle(
+                                    color: Color(0xff604773),
+                                    fontSize: 10,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  s(user['employee_number']),
+                                  key: const ValueKey(
+                                    'participant-employee-number',
+                                  ),
+                                  style: const TextStyle(
+                                    color: Color(0xff281933),
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: .8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -341,6 +486,100 @@ class ClubCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class ProfilePhotoEditor extends StatefulWidget {
+  final Api api;
+  const ProfilePhotoEditor({super.key, required this.api});
+  @override
+  State<ProfilePhotoEditor> createState() => _ProfilePhotoEditorState();
+}
+
+class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
+  bool busy = false;
+  Future<void> change({bool remove = false}) async {
+    if (busy) return;
+    try {
+      XFile? file;
+      if (!remove) {
+        file = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1400,
+          maxHeight: 1400,
+          imageQuality: 90,
+        );
+        if (file == null) return;
+      }
+      if (!mounted) return;
+      setState(() => busy = true);
+      await widget.api.updateAvatar(file);
+      if (mounted) toast(context, remove ? 'Фото удалено' : 'Фото сохранено');
+    } catch (e) {
+      if (mounted) toast(context, e);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: widget.api,
+    builder: (context, _) {
+      final user = widget.api.user;
+      if (user == null) return const SizedBox.shrink();
+      final hasPhoto = s(user['avatar_path']).isNotEmpty;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MemberAvatar(
+            api: widget.api,
+            user: user,
+            size: 86,
+            onTap: busy ? null : () => change(),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 4,
+            children: [
+              TextButton.icon(
+                key: const ValueKey('edit-profile-photo'),
+                onPressed: busy ? null : () => change(),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xfff1e4ff),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 0,
+                    vertical: 8,
+                  ),
+                ),
+                icon: Icon(
+                  busy
+                      ? Icons.hourglass_top_rounded
+                      : Icons.add_a_photo_outlined,
+                  size: 18,
+                ),
+                label: AppText(
+                  busy
+                      ? 'Сохранение…'
+                      : hasPhoto
+                      ? 'Изменить фото'
+                      : 'Добавить фото',
+                ),
+              ),
+              if (hasPhoto)
+                TextButton(
+                  onPressed: busy ? null : () => change(remove: true),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xffe4d3ee),
+                  ),
+                  child: const AppText('Удалить фото'),
+                ),
+            ],
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class HomePage extends StatelessWidget {
@@ -397,13 +636,12 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 13),
               AppText(
-                settingsText(
-                  'greeting',
-                  fallback: tx('Добрый день,\n{name}!'),
-                ).replaceAll('{name}', s(api.user!['name'])),
+                s(api.user!['organization_name']).isEmpty
+                    ? tx('Организация профсоюза')
+                    : s(api.user!['organization_name']),
                 style: titleStyle(
-                  32,
-                ).copyWith(color: Colors.white, height: 1.12),
+                  22,
+                ).copyWith(color: Colors.white, height: 1.3),
               ),
               const SizedBox(height: 9),
               AppText(
@@ -411,7 +649,7 @@ class HomePage extends StatelessWidget {
                 style: TextStyle(color: Color(0xffd7cddd), fontSize: 13),
               ),
               const SizedBox(height: 25),
-              ClubCard(user: api.user!),
+              ClubCard(user: api.user!, api: api),
               const SizedBox(height: 17),
 
               ActionButton(
@@ -1134,15 +1372,7 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: lavender,
-                child: Icon(
-                  Icons.person_outline_rounded,
-                  size: 34,
-                  color: purple,
-                ),
-              ),
+              ProfilePhotoEditor(api: api),
               const SizedBox(height: 17),
               AppText(
                 s(api.user!['name']),
@@ -1191,7 +1421,9 @@ class ProfilePage extends StatelessWidget {
                 appBar: AppBar(title: const AppText('Карта участника')),
                 body: Padding(
                   padding: const EdgeInsets.all(22),
-                  child: Column(children: [ClubCard(user: api.user!)]),
+                  child: Column(
+                    children: [ClubCard(user: api.user!, api: api)],
+                  ),
                 ),
               ),
             ),

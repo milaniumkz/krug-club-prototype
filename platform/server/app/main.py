@@ -3,7 +3,6 @@ import json
 from functools import lru_cache
 from typing import Literal
 import httpx
-import csv
 import io
 import math
 import os
@@ -18,7 +17,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Respo
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy import delete, func, or_, select, text
 from sqlalchemy.exc import IntegrityError, TimeoutError as PoolTimeout
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
@@ -26,6 +25,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from . import schemas as S
 from . import session_events, catalog_cache, catalog_db
+from .member_import import read_members, template_bytes
 from .middleware import Protection
 from .catalog_db import get_catalog_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -678,8 +678,7 @@ def rotate_qr(resource_id: str, user=Depends(manager), db=Depends(get_db)):
             'warning': 'Сохраните или распечатайте код. Повторная выдача отменяет предыдущий'}
 
 
-@app.post('/api/media', status_code=201)
-async def upload(file: UploadFile = File(...), user=Depends(manager)):
+async def save_image(file: UploadFile, *, avatar=False):
     data = await file.read(8 * 1024 * 1024 + 1)
     if len(data) > 8 * 1024 * 1024:
         raise HTTPException(413, 'Изображение не больше 8 МБ')
@@ -688,13 +687,35 @@ async def upload(file: UploadFile = File(...), user=Depends(manager)):
             if image.format not in ('JPEG', 'PNG', 'WEBP'):
                 raise ValueError()
             image.load()
-            image = image.convert('RGB')
-            image.thumbnail((2400, 2400))
+            image = ImageOps.exif_transpose(image).convert('RGB')
+            image.thumbnail((640, 640) if avatar else (2400, 2400))
             name = uuid.uuid4().hex + '.webp'
             image.save(UPLOADS / name, 'WEBP', quality=85)
     except (UnidentifiedImageError, ValueError, OSError, Image.DecompressionBombError):
         raise HTTPException(422, 'Нужен корректный JPEG, PNG или WebP') from None
     return {'path': '/media/' + name}
+
+
+@app.post('/api/media', status_code=201)
+async def upload(file: UploadFile = File(...), user=Depends(manager)):
+    return await save_image(file)
+
+
+@app.post('/api/me/avatar', status_code=201)
+async def set_avatar(file: UploadFile = File(...), user=Depends(ready_user), db=Depends(get_db)):
+    result = await save_image(file, avatar=True)
+    user.avatar_path = result['path']
+    audit(db, user, 'profile_photo_updated', user.id)
+    db.commit()
+    return user_json(user)
+
+
+@app.delete('/api/me/avatar')
+def delete_avatar(user=Depends(ready_user), db=Depends(get_db)):
+    user.avatar_path = None
+    audit(db, user, 'profile_photo_removed', user.id)
+    db.commit()
+    return user_json(user)
 
 
 @app.get('/media/{name}')
@@ -838,19 +859,24 @@ def add_account(body: S.AccountIn, user=Depends(admin), db=Depends(get_db)):
     return {'user': user_json(account), 'temporary_password': password}
 
 
+@app.get('/api/admin/accounts/import-template')
+def import_template(user=Depends(admin)):
+    return Response(template_bytes(), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    headers={'Content-Disposition': 'attachment; filename="QMETplus_employees.xlsx"'})
+
+
 @app.post('/api/admin/accounts/import')
 async def import_accounts(organization_id: str, file: UploadFile = File(...),
                           user=Depends(admin), db=Depends(get_db)):
     require(db.get(Organization, organization_id), 'Организация не найдена')
     raw = await file.read(1024 * 1024 + 1)
     if len(raw) > 1024 * 1024:
-        raise HTTPException(413, 'CSV не больше 1 МБ')
+        raise HTTPException(413, 'Файл не больше 1 МБ')
     try:
-        rows = list(csv.DictReader(io.StringIO(raw.decode('utf-8-sig'))))
-        if not rows or len(rows) > 500:
-            raise ValueError('От 1 до 500 работников за одну загрузку')
+        rows = read_members(raw, file.filename)
         prepared, seen = [], set()
-        for line, row in enumerate(rows, 2):
+        for row in rows:
+            line = row['_line']
             account = S.AccountIn(name=row.get('name', ''), employee_number=row.get('employee_number', ''),
                                   phone=row.get('phone') or None, organization_id=organization_id)
             if account.employee_number in seen:
@@ -860,7 +886,7 @@ async def import_accounts(organization_id: str, file: UploadFile = File(...),
         existing = db.scalar(select(User.id).where(User.organization_id == organization_id,
                                                    User.employee_number.in_(seen)).limit(1))
         if existing:
-            raise ValueError('В CSV есть уже добавленный работник; загрузка отменена целиком')
+            raise ValueError('В файле есть уже добавленный работник; загрузка отменена целиком')
     except (ValueError, UnicodeError) as exc:
         raise HTTPException(422, str(exc)[:1000]) from None
     credentials = []

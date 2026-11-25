@@ -313,10 +313,53 @@ class Api extends ChangeNotifier {
     return s(body['path']);
   }
 
+  Future<void> updateAvatar(XFile? file) async {
+    final owner = user?['id'];
+    dynamic result;
+    if (file == null) {
+      result = await request('DELETE', '/me/avatar');
+    } else {
+      final bytes = await file.readAsBytes();
+      if (bytes.length > 8 * 1024 * 1024) {
+        throw ApiError(413, 'Изображение не больше 8 МБ');
+      }
+      final req =
+          http.MultipartRequest('POST', Uri.parse('$base/api/me/avatar'))
+            ..headers.addAll(headers)
+            ..files.add(
+              http.MultipartFile.fromBytes('file', bytes, filename: file.name),
+            );
+      final response = await http.Response.fromStream(
+        await client.send(req).timeout(const Duration(seconds: 60)),
+      );
+      result = jsonDecode(utf8.decode(response.bodyBytes));
+      if (response.statusCode >= 400) {
+        throw ApiError(response.statusCode, s(result['detail']));
+      }
+    }
+    if (owner != null && user?['id'] == owner && result['id'] == owner) {
+      user = {...user!, ...Json.from(result as Map)};
+      notifyListeners();
+    }
+  }
+
+  Future<Uint8List> memberTemplate() async {
+    final response = await client
+        .get(
+          Uri.parse('$base/api/admin/accounts/import-template'),
+          headers: headers,
+        )
+        .timeout(const Duration(seconds: 60));
+    if (response.statusCode != 200) {
+      throw ApiError(response.statusCode, 'Не удалось скачать образец');
+    }
+    return response.bodyBytes;
+  }
+
   Future<dynamic> importMembers(XFile file, String org) async {
     final bytes = await file.readAsBytes();
     if (bytes.length > 1024 * 1024) {
-      throw ApiError(413, 'CSV не больше 1 МБ');
+      throw ApiError(413, 'Файл не больше 1 МБ');
     }
     final req =
         http.MultipartRequest(

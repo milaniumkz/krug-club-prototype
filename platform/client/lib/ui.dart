@@ -31,33 +31,29 @@ class Brand extends StatelessWidget {
     SettingsScope.watch(context);
     return Row(
       children: [
-        if (appSettings.logoUrl.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              appSettings.logoUrl,
-              width: 38,
-              height: 38,
-              cacheWidth: 76,
-              cacheHeight: 76,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => Image.asset(
-                'assets/qmetplus_icon.png',
-                width: 38,
-                height: 38,
-                fit: BoxFit.contain,
-              ),
-            ),
-          )
-        else
-          Image.asset(
-            'assets/qmetplus_icon.png',
-            width: 38,
-            height: 38,
-            cacheWidth: 76,
-            cacheHeight: 76,
-            fit: BoxFit.contain,
-          ),
+        ClipOval(
+          child: appSettings.logoUrl.isEmpty
+              ? Image.asset(
+                  'assets/logo.png',
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.contain,
+                )
+              : Image.network(
+                  appSettings.logoUrl,
+                  width: 44,
+                  height: 44,
+                  cacheWidth: 132,
+                  cacheHeight: 132,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, error, stack) => Image.asset(
+                    'assets/logo.png',
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+        ),
         const SizedBox(width: 10),
         const Expanded(
           child: FittedBox(

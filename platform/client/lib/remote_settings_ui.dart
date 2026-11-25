@@ -530,7 +530,7 @@ class _AdminAppSettingsPageState extends State<AdminAppSettingsPage> {
               lines: 3,
             ),
             pair('eyebrow', 'Подпись на главной', maxLength: 100),
-            pair('greeting', 'Приветствие · шаблон {name}', maxLength: 160),
+
             pair('tagline', 'Слоган', maxLength: 160),
             pair('partners_title', 'Заголовок партнёров', maxLength: 100),
             pair('offers_title', 'Заголовок предложений', maxLength: 100),

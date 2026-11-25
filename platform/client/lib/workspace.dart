@@ -1647,7 +1647,7 @@ class _AccountsPageState extends State<AccountsPage> {
       if (org == null) return;
       final file = await openFile(
         acceptedTypeGroups: [
-          const XTypeGroup(label: 'CSV', extensions: ['csv']),
+          const XTypeGroup(label: 'Excel / CSV', extensions: ['xlsx', 'csv']),
         ],
       );
       if (file == null) return;
@@ -1691,14 +1691,46 @@ class _AccountsPageState extends State<AccountsPage> {
             OutlinedButton.icon(
               onPressed: importing ? null : () => importCsv(refresh),
               icon: const Icon(Icons.upload_file_outlined),
-              label: AppText(importing ? 'Загрузка…' : 'Импорт CSV'),
+              label: AppText(importing ? 'Загрузка…' : 'Загрузить сотрудников'),
+            ),
+            Builder(
+              builder: (buttonContext) => OutlinedButton.icon(
+                icon: const Icon(Icons.download_outlined),
+                label: const AppText('Скачать образец Excel'),
+                onPressed: () async {
+                  try {
+                    final bytes = await widget.api.memberTemplate();
+                    if (!buttonContext.mounted) return;
+                    final box = buttonContext.findRenderObject() as RenderBox?;
+                    await SharePlus.instance.share(
+                      ShareParams(
+                        files: [
+                          XFile.fromData(
+                            bytes,
+                            mimeType:
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            name: 'QMETplus_employees.xlsx',
+                          ),
+                        ],
+                        fileNameOverrides: ['QMETplus_employees.xlsx'],
+                        sharePositionOrigin: box == null
+                            ? null
+                            : box.localToGlobal(Offset.zero) & box.size,
+                        downloadFallbackEnabled: true,
+                      ),
+                    );
+                  } catch (e) {
+                    if (buttonContext.mounted) toast(buttonContext, e);
+                  }
+                },
+              ),
             ),
           ],
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 14),
           child: AppText(
-            'CSV UTF-8: employee_number,name,phone. Телефон необязателен. До 500 работников за загрузку. Удаление из клуба — только при увольнении; за нарушение правил — блокировка.',
+            'Excel или CSV: №, Фамилия, Имя, Отчество, Табельный номер. Отчество можно не заполнять. До 500 работников за загрузку. Организацию выберите перед загрузкой. Удаление из клуба — только при увольнении; за нарушение правил — блокировка.',
             style: TextStyle(color: muted, fontSize: 12),
           ),
         ),
