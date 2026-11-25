@@ -17,7 +17,7 @@ jobs:
           gh release download qmetplus-2.4.1-2026-11-25 --pattern 'qmet241web.part.*' --dir parts
           test "$(find parts -type f | wc -l)" -eq 3
           cat parts/qmet241web.part.??? > delivery.zip
-          echo 'ef3069be3546e3a62f6a41d379b5f0a0d8a8ece437b8726a8114df9ddf1e118f  delivery.zip' | sha256sum --check
+          echo 'fac2cbccfc400422a02751f752765f2424d59b829a7e5bdf576314ff8f3789e1  delivery.zip' | sha256sum --check
           unzip -q delivery.zip
           sha256sum --check --ignore-missing checksums.sha256
           gh release upload qmetplus-2.4.1-2026-11-25 QMETplus_full_project.zip checksums.sha256 --clobber
