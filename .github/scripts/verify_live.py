@@ -12,7 +12,7 @@ def remote(code,payload):
  ch=ssh.open_session();ch.exec_command('cd /opt/qazaqmetal/current && docker compose exec -T api python -c '+shlex.quote(code));ch.sendall(json.dumps(payload).encode());ch.shutdown_write();data=ch.makefile('r').read();err=ch.makefile_stderr('r').read();status=ch.recv_exit_status()
  if status:raise RuntimeError('QA administrative operation failed; no credentials logged')
  return json.loads(data) if data.strip() else None
-qa='qa-live-'+uuid.uuid4().hex[:12];member_identifier=qa+'-member';admin_password=secrets.token_urlsafe(24);memberid=None;adminid=None;staffid=None
+qa='qa-live-'+uuid.uuid4().hex[:12];member_identifier=qa+'-member';admin_password=secrets.token_urlsafe(24);memberid=None;adminid=None;staffid=None;importedid=None
 bootstrap='''import json,sys
 from sqlalchemy import select
 from app.db import SessionLocal,User,Partner
@@ -59,11 +59,26 @@ try:
   remote("from app.db import SessionLocal,Session; from sqlalchemy import delete; import sys,json; db=SessionLocal(); db.execute(delete(Session).where(Session.id.in_(json.load(sys.stdin)))); db.commit(); db.close()",verification_sessions)
  admin=call('POST','/api/auth/login',{'identifier':qa,'password':admin_password})['token']
  org=next(o for o in call('GET','/api/admin/organizations',token=admin) if o['code']=='DEMO')
+ template=call('GET','/api/admin/accounts/import-template',token=admin);assert template[:2]==b'PK'
+ call('GET','/api/admin/accounts/import-template',token=call('POST','/api/auth/login',{'identifier':qa+'-partner','password':admin_password})['token'],status=403)
+ import_number=qa+'-import'
+ csv=('№;Фамилия;Имя;Отчество;Табельный номер\n1;Тестовый;Импорт;Сотрудника;'+import_number+'\n').encode('utf-8-sig')
+ imported=client.post(ADMIN+'/api/admin/accounts/import',params={'organization_id':org['id']},files={'file':('employees.csv',csv)},headers={'Authorization':'Bearer '+admin})
+ assert imported.status_code==200 and imported.json()['count']==1
+ imported_user=call('GET','/api/admin/accounts?q='+import_number,token=admin)['items'][0];importedid=imported_user['id']
+ assert imported_user['organization_id']==org['id'] and imported_user['name']=='Тестовый Импорт Сотрудника'
+ checks.append({'case':'Minimal Russian employee spreadsheet imports into selected organization','result':'PASS'})
  created=call('POST','/api/admin/accounts',{'name':'QA · участник приёмки','organization_id':org['id'],'employee_number':member_identifier,'role':'member'},admin,201);memberid=created['user']['id'];temp=created['temporary_password']
  login=call('POST','/api/auth/login',{'identifier':member_identifier,'password':temp,'organization_code':'DEMO'});token=login['token'];assert login['user']['must_change_password']
  call('GET','/api/catalog',token=token,status=428)
  personal='qa'+secrets.token_hex(2);changed=call('POST','/api/auth/password',{'old_password':temp,'new_password':personal},token);token=changed['token'];assert not changed['user']['must_change_password']
  call('GET','/api/auth/me',token=token);call('GET','/api/auth/sessions',token=token)
+ avatar=client.post(BASE+'/api/me/avatar',headers={'Authorization':'Bearer '+token},files={'file':('qa-photo.png',Path('.github/demo-assets/restaurant-photo.png').read_bytes())})
+ assert avatar.status_code==201 and avatar.json()['id']==memberid
+ profile=call('GET','/api/auth/me',token=token);assert profile['avatar_path']==avatar.json()['avatar_path'] and profile['organization_name']==org['name']
+ assert len(call('GET',profile['avatar_path'],token=token))>100
+ assert call('DELETE','/api/me/avatar',token=token)['avatar_path'] is None
+ checks.append({'case':'Own profile photo upload, persistence and removal without losing organization/session','result':'PASS'})
  assert call('GET','/api/meta')['brand']=='QMET+'
  config=call('GET','/api/app-config');assert config['schema_version']==1 and config['settings']['brand_name']=='QMET+'
  cached=client.get(BASE+'/api/app-config',headers={'If-None-Match':config['etag']});assert cached.status_code==304
@@ -267,5 +282,5 @@ with SessionLocal() as db:
  db.execute(delete(User).where(User.id.in_(ids)));db.commit()
 print(json.dumps({'cleanup':'PASS'}))
 '''
-  remote(cleanup,{'ids':[adminid,memberid,staffid],'prefix':qa})
+  remote(cleanup,{'ids':[adminid,memberid,staffid,importedid],'prefix':qa})
  client.close();ssh.close();(out/'results.json').write_text(json.dumps({'url':BASE,'checks':checks,'physical_camera_tested':False,'test_accounts_removed':True},ensure_ascii=False,indent=2))
