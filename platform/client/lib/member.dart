@@ -293,6 +293,7 @@ class MemberAvatar extends StatelessWidget {
       ),
     );
     return Semantics(
+      container: true,
       label: tx(onTap == null ? 'Фото участника' : 'Изменить фото'),
       image: onTap == null,
       button: onTap != null,
