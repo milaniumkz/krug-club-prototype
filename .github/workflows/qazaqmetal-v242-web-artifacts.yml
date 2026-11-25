@@ -1,0 +1,23 @@
+name: Deliver QazaqMetal 2.4.2 circular icons files
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Verify and publish complete testing files
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qmetplus-2.4.2-2026-11-25 --pattern 'qmet242web.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 4
+          cat parts/qmet242web.part.??? > delivery.zip
+          echo '6d42cba2e2b80189d33bdcac633702018e05ff7ef252858f9c4c1e951b89a4eb  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check --ignore-missing checksums.sha256
+          gh release upload qmetplus-2.4.2-2026-11-25 QMETplus_full_project.zip checksums.sha256 --clobber
