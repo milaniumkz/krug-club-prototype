@@ -1,0 +1,38 @@
+[
+  {
+    "case": "Actual map streets and Russian labels render in release web",
+    "requests": 6,
+    "peak_parallel": 4,
+    "result": "PASS"
+  },
+  {
+    "case": "4 map reopens and idle: no additional tile or style requests",
+    "additional_requests": 0,
+    "result": "PASS"
+  },
+  {
+    "case": "Rapid map gestures debounce venue queries and bound tile concurrency",
+    "catalog_requests": 1,
+    "peak_parallel": 4,
+    "result": "PASS"
+  },
+  {
+    "case": "Already loaded map remains visible when reopened without network",
+    "result": "PASS"
+  },
+  {
+    "case": "503 outage stops after bounded attempts; explicit retry restores map",
+    "failed_requests": 12,
+    "unique_failed_tiles": 6,
+    "peak_parallel": 4,
+    "result": "PASS"
+  },
+  {
+    "case": "Desktop map renders and retains same request limit",
+    "result": "PASS"
+  },
+  {
+    "case": "Partner marker opens venue and keeps bottom navigation",
+    "result": "PASS"
+  }
+]
