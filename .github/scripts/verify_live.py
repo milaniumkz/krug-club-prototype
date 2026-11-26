@@ -126,6 +126,10 @@ try:
   ctx=browser.new_context(viewport={'width':390,'height':844},permissions=['geolocation','notifications'],geolocation={'latitude':52.287,'longitude':76.967})
   page=ctx.new_page();page.set_default_timeout(15000)
   push_http=[]; push_csp=[]; push_failures=[]
+  map_requests=[];map_responses=[];map_errors=[]
+  page.on('request',lambda request:map_requests.append(request.url) if 'tiles.openfreemap.org' in request.url and '.pbf' in request.url else None)
+  page.on('response',lambda response:map_responses.append({'url':response.url,'status':response.status}) if 'tiles.openfreemap.org' in response.url and '.pbf' in response.url else None)
+  page.on('pageerror',lambda error:map_errors.append(str(error)))
   from urllib.parse import urlsplit
   def push_response(response):
    host=urlsplit(response.url).hostname or ''
@@ -193,6 +197,18 @@ try:
    page.get_by_role('tab',name=tab,exact=True).click();page.wait_for_timeout(1400)
    assert 'Exception caught' not in page.locator('body').inner_text()
    checks.append({'screen':tab,'result':'PASS'});page.screenshot(path=str(out/('screen-'+str(len(checks))+'.png')))
+   if tab=='На карте':
+    for map_attempt in range(75):
+     if any(response['status']==200 for response in map_responses):break
+     page.wait_for_timeout(200)
+    assert any(response['status']==200 for response in map_responses),'No actual map tile was loaded'
+    page.wait_for_timeout(1800);assert not map_errors,map_errors
+    page.mouse.move(5,120);page.screenshot(path=str(out/'map-rendered.png'))
+    tile_count=len(map_requests)
+    page.get_by_role('tab',name='Главная',exact=True).click();page.wait_for_timeout(400)
+    page.get_by_role('tab',name='На карте',exact=True).click();page.wait_for_timeout(2000)
+    assert len(map_requests)==tile_count, 'Reopening cached viewport refetched tiles'
+    checks.append({'case':'Real map tiles render in release web and reopening makes no additional tile requests','initial_tile_requests':tile_count,'repeat_tile_requests':len(map_requests)-tile_count,'result':'PASS'})
   page.get_by_role('tab',name='Профиль',exact=True).click();page.wait_for_timeout(800)
   page.get_by_role('button',name='ҚАЗ',exact=True).click();page.wait_for_timeout(700)
   page.get_by_role('tab',name='Басты бет',exact=True).wait_for();page.screenshot(path=str(out/'profile-kk.png'))
