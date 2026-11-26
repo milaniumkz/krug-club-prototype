@@ -182,14 +182,12 @@ void main() {
   test(
     'Map queue rejects excess work instead of growing without a bound',
     () async {
-      final gates = <Completer<void>>[];
+      final allow = Completer<void>();
       final cache = MapNetworkCache(
         maximumConcurrent: 2,
         maximumQueued: 1,
         client: MockClient((_) async {
-          final gate = Completer<void>();
-          gates.add(gate);
-          await gate.future;
+          await allow.future;
           return http.Response.bytes([1], 200);
         }),
       );
@@ -201,13 +199,7 @@ void main() {
         throwsA(isA<ProviderException>()),
       );
       expect(cache.networkRequests, 2);
-      for (final gate in gates) {
-        gate.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      for (final gate in gates.where((g) => !g.isCompleted)) {
-        gate.complete();
-      }
+      allow.complete();
       await Future.wait([first, second, third]);
       expect(cache.peakActive, 2);
       cache.dispose();
