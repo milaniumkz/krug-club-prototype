@@ -1,0 +1,23 @@
+name: Deliver QazaqMetal 2.4.3 stable web map files
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deliver:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: milaniumkz/krug-club-prototype
+    steps:
+      - name: Verify and publish complete testing files
+        run: |
+          set -euo pipefail
+          mkdir parts
+          gh release download qmetplus-2.4.3-2026-11-26 --pattern 'qmet243web.part.*' --dir parts
+          test "$(find parts -type f | wc -l)" -eq 4
+          cat parts/qmet243web.part.??? > delivery.zip
+          echo '00d6fafb2cb705f81e77ac8a94cb16dc8b03e883577e4bc47918849a10c001d6  delivery.zip' | sha256sum --check
+          unzip -q delivery.zip
+          sha256sum --check --ignore-missing checksums.sha256
+          gh release upload qmetplus-2.4.3-2026-11-26 QMETplus_full_project.zip checksums.sha256 --clobber
