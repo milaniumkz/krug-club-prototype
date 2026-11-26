@@ -7,3 +7,7 @@
 - Логотип предоставлен заказчиком ранее; используется имеющийся растровый ресурс, а не оригинальный вектор.
 - В production нет автоматически опубликованных чужих фотографий. Партнёры загружают изображения, права на публикацию которых проверяет оператор при модерации.
 - Рекламные сведения из материалов заказчика импортируются как черновики. Они не заменяют действующий договор партнёра и подтверждение актуальных условий.
+
+## Browser-compatible vector map patches
+
+`client/packages/executor_lib` (upstream 1.1.2) and `client/packages/vector_map_tiles` (upstream 8.0.0) include scoped browser compatibility/request-cache fixes. Their upstream LICENSE files are preserved. Map data attribution remains visible for OpenStreetMap contributors, OpenMapTiles and OpenFreeMap. See MAP_STABILITY.md for changes and limits.

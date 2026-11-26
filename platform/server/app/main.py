@@ -1,8 +1,6 @@
-import copy
 import json
 from functools import lru_cache
 from typing import Literal
-import httpx
 import io
 import math
 import os
@@ -173,9 +171,7 @@ def health(db=Depends(get_db)):
 
 @lru_cache(maxsize=2)
 def localized_map_style(language):
-    response = httpx.get('https://tiles.openfreemap.org/styles/positron', timeout=15)
-    response.raise_for_status()
-    style = copy.deepcopy(response.json())
+    style = json.loads((Path(__file__).with_name('map_style.json')).read_text(encoding='utf-8'))
     for layer in style.get('layers', []):
         layout = layer.get('layout', {})
         if layer.get('type') == 'symbol' and 'text-field' in layout:
@@ -189,7 +185,7 @@ def map_style(lang: Literal['ru', 'kk'] = 'ru', db=Depends(get_db)):
         raise HTTPException(503, 'Карта временно недоступна')
     try:
         return localized_map_style(lang)
-    except (httpx.HTTPError, ValueError):
+    except (OSError, ValueError):
         return JSONResponse({'detail': 'Карта временно недоступна. Повторите попытку'}, status_code=503)
 
 

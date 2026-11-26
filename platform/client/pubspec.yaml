@@ -1,7 +1,7 @@
 name: qazaqmetal
 description: QMET+ member and partner platform
 publish_to: none
-version: 2.4.2+24
+version: 2.4.3+25
 environment:
   sdk: '>=3.10.0 <4.0.0'
 dependencies:
@@ -49,3 +49,9 @@ flutter:
     - family: Roboto
       fonts:
         - asset: assets/Roboto.ttf
+
+dependency_overrides:
+  executor_lib:
+    path: packages/executor_lib
+  vector_map_tiles:
+    path: packages/vector_map_tiles

@@ -106,12 +106,11 @@ packages:
     source: hosted
     version: "0.7.15"
   executor_lib:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: executor_lib
-      sha256: "95ddf2957d9942d9702855b38dd49677f0ee6a8b77d7b16c0e509c7669d17386"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/executor_lib"
+      relative: true
+    source: path
     version: "1.1.2"
   fake_async:
     dependency: transitive
@@ -1029,10 +1028,9 @@ packages:
   vector_map_tiles:
     dependency: "direct main"
     description:
-      name: vector_map_tiles
-      sha256: "4dc9243195c1a49c7be82cc1caed0d300242bb94381752af5f6868d9d1404e25"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/vector_map_tiles"
+      relative: true
+    source: path
     version: "8.0.0"
   vector_math:
     dependency: transitive

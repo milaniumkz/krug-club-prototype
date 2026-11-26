@@ -1,3 +1,4 @@
+import 'map_style_cache.dart';
 import 'app_settings.dart';
 import 'i18n.dart';
 import 'dart:async';
@@ -19,7 +20,32 @@ class VenueMap extends StatefulWidget {
   State<VenueMap> createState() => _VenueMapState();
 }
 
+class _SavedMapView {
+  final LatLng center;
+  final double zoom;
+  final LatLng? position;
+  final DateTime until;
+  _SavedMapView(this.center, this.zoom, this.position)
+    : until = DateTime.now().add(const Duration(minutes: 10));
+}
+
 class _VenueMapState extends State<VenueMap> {
+  static final _views = <String, _SavedMapView>{};
+  _SavedMapView? savedView;
+  String get viewKey => '${widget.api.base}|${widget.api.user?['id']}';
+  void saveView() {
+    if (!ready) return;
+    _views.remove(viewKey);
+    _views[viewKey] = _SavedMapView(
+      map.camera.center,
+      map.camera.zoom,
+      position,
+    );
+    while (_views.length > 8) {
+      _views.remove(_views.keys.first);
+    }
+  }
+
   final map = MapController();
   List<Json> venues = [];
   String? error, locationMessage;
@@ -28,43 +54,119 @@ class _VenueMapState extends State<VenueMap> {
   Timer? debounce;
   int generation = 0;
   vector.Style? vectorStyle;
-  String attribution = '© OpenStreetMap contributors · OpenFreeMap';
-  Future<void> loadStyle() async {
+  String attribution =
+      '© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap';
+  bool loadingStyle = true, tilesLoaded = false;
+  String? styleError, tileError;
+  int styleGeneration = 0, layerRevision = 0;
+  Timer? tileTimeout;
+  StreamSubscription<vector.MapTileEvent>? tileSubscription;
+  String? loadingBounds, lastBounds;
+  DateTime? lastLoaded;
+  bool queuedLoad = false;
+
+  Future<void> loadStyle({bool refresh = false}) async {
+    final current = ++styleGeneration;
+    setState(() {
+      loadingStyle = true;
+      styleError = null;
+      tileError = null;
+    });
     try {
-      final style = await vector.StyleReader(
-        uri: '${widget.api.base}/api/map-style?lang=${appLanguage.code}',
-      ).read();
-      if (mounted) {
+      final style = await MapStyleCache.shared.read(
+        '${widget.api.base}/api/map-style?lang=${appLanguage.code}',
+        refresh: refresh,
+      );
+      if (!mounted || current != styleGeneration) return;
+      setState(() {
+        vectorStyle = style;
+        loadingStyle = false;
+        tilesLoaded = false;
+        layerRevision++;
+      });
+      startTileTimeout();
+    } catch (_) {
+      if (mounted && current == styleGeneration) {
         setState(() {
-          vectorStyle = style;
-          error = null;
+          loadingStyle = false;
+          styleError = 'Карта временно недоступна. Повторите попытку';
         });
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() => error = 'Карта временно недоступна. Повторите попытку');
-      }
     }
+  }
+
+  void startTileTimeout() {
+    tileTimeout?.cancel();
+    tileTimeout = Timer(const Duration(seconds: 18), () {
+      if (mounted && !tilesLoaded) {
+        setState(
+          () => tileError =
+              'Не удалось загрузить карту. Проверьте интернет и повторите попытку',
+        );
+      }
+    });
+  }
+
+  void retryMap() {
+    if (loadingStyle) return;
+    vector.MapNetworkCache.shared.clearFailures();
+    if (vectorStyle == null || styleError != null) {
+      loadStyle(refresh: true);
+    } else {
+      setState(() {
+        tileError = null;
+        tilesLoaded = false;
+        layerRevision++;
+      });
+      startTileTimeout();
+    }
+    load(force: true);
   }
 
   @override
   void initState() {
     super.initState();
+    final previous = _views[viewKey];
+    if (previous != null && previous.until.isAfter(DateTime.now())) {
+      savedView = previous;
+      position = previous.position;
+    }
     appLanguage.addListener(loadStyle);
+    tileSubscription = vector.MapNetworkCache.shared.events.listen((event) {
+      if (!mounted || vectorStyle == null) return;
+      if (event.loaded) {
+        tileTimeout?.cancel();
+        if (!tilesLoaded || tileError != null) {
+          setState(() {
+            tilesLoaded = true;
+            tileError = null;
+          });
+        }
+      } else {
+        setState(
+          () => tileError = event.statusCode == 429
+              ? 'Сервис карты занят. Подождите немного и повторите попытку'
+              : 'Часть карты не загрузилась. Проверьте интернет и повторите попытку',
+        );
+      }
+    });
     loadStyle();
     init();
   }
 
   @override
   void dispose() {
+    saveView();
     appLanguage.removeListener(loadStyle);
     debounce?.cancel();
+    tileTimeout?.cancel();
+    tileSubscription?.cancel();
     map.dispose();
     super.dispose();
   }
 
   Future<void> init() async {
-    if (mounted) await locate();
+    if (mounted && savedView == null) await locate();
   }
 
   Future<void> locate() async {
@@ -118,10 +220,23 @@ class _VenueMapState extends State<VenueMap> {
     }
   }
 
-  Future<void> load() async {
-    if (!ready) return;
-    final current = ++generation;
+  Future<void> load({bool force = false}) async {
+    if (!mounted || !ready) return;
     final b = map.camera.visibleBounds;
+    final bounds =
+        '${b.west.toStringAsFixed(4)}|${b.south.toStringAsFixed(4)}|${b.east.toStringAsFixed(4)}|${b.north.toStringAsFixed(4)}|${position?.latitude.toStringAsFixed(4)}|${position?.longitude.toStringAsFixed(4)}';
+    if (loadingBounds != null) {
+      queuedLoad = queuedLoad || bounds != loadingBounds;
+      return;
+    }
+    if (!force &&
+        bounds == lastBounds &&
+        lastLoaded != null &&
+        DateTime.now().difference(lastLoaded!) < const Duration(seconds: 30)) {
+      return;
+    }
+    loadingBounds = bounds;
+    final current = ++generation;
     try {
       final data = await widget.api.get(
         '/catalog?limit=500&west=${b.west}&south=${b.south}&east=${b.east}&north=${b.north}${position == null ? '' : '&latitude=${position!.latitude}&longitude=${position!.longitude}'}',
@@ -129,6 +244,8 @@ class _VenueMapState extends State<VenueMap> {
       if (mounted && current == generation) {
         setState(() {
           venues = rows(data['items']);
+          lastBounds = bounds;
+          lastLoaded = DateTime.now();
           error = null;
           if (data['total'] > 500) {
             error = 'На карте показаны первые 500 заведений. Увеличьте масштаб';
@@ -137,6 +254,12 @@ class _VenueMapState extends State<VenueMap> {
       }
     } catch (e) {
       if (mounted && current == generation) setState(() => error = '$e');
+    } finally {
+      loadingBounds = null;
+      if (queuedLoad && mounted) {
+        queuedLoad = false;
+        unawaited(load());
+      }
     }
   }
 
@@ -151,8 +274,8 @@ class _VenueMapState extends State<VenueMap> {
             children: [
               Expanded(child: AppText('На карте', style: titleStyle(30))),
               IconButton(
-                tooltip: tx('Обновить заведения'),
-                onPressed: load,
+                tooltip: tx('Обновить карту'),
+                onPressed: loadingStyle ? null : retryMap,
                 icon: const Icon(Icons.refresh),
               ),
               IconButton(
@@ -183,85 +306,165 @@ class _VenueMapState extends State<VenueMap> {
             child: AppText(error!, style: const TextStyle(fontSize: 12)),
           ),
         Expanded(
-          child: FlutterMap(
-            mapController: map,
-            options: MapOptions(
-              initialCenter: position ?? const LatLng(52.287, 76.967),
-              initialZoom: 13,
-              minZoom: 3,
-              maxZoom: 18,
-              onMapReady: () {
-                ready = true;
-                if (position != null) map.move(position!, 14);
-                load();
-              },
-              onPositionChanged: (_, gesture) {
-                debounce?.cancel();
-                debounce = Timer(const Duration(milliseconds: 500), load);
-              },
-            ),
+          child: Stack(
             children: [
-              if (vectorStyle != null)
-                vector.VectorTileLayer(
-                  theme: vectorStyle!.theme,
-                  tileProviders: vectorStyle!.providers,
-                  sprites: vectorStyle!.sprites,
+              FlutterMap(
+                mapController: map,
+                options: MapOptions(
+                  initialCenter:
+                      savedView?.center ??
+                      position ??
+                      const LatLng(52.287, 76.967),
+                  initialZoom: savedView?.zoom ?? 13,
+                  minZoom: 3,
+                  maxZoom: 18,
+                  onMapReady: () {
+                    ready = true;
+                    if (position != null && savedView == null) {
+                      map.move(position!, 14);
+                    }
+                    load();
+                  },
+                  onPositionChanged: (_, gesture) {
+                    saveView();
+                    debounce?.cancel();
+                    debounce = Timer(
+                      const Duration(milliseconds: 650),
+                      () => load(),
+                    );
+                  },
                 ),
-              MarkerLayer(
-                markers: [
-                  if (position != null)
-                    Marker(
-                      point: position!,
-                      width: 28,
-                      height: 28,
-                      child: Semantics(
-                        label: tx('Вы здесь'),
-                        child: Icon(
-                          Icons.my_location_rounded,
-                          color: Colors.blue,
-                          size: 28,
-                        ),
-                      ),
+                children: [
+                  if (vectorStyle != null)
+                    vector.VectorTileLayer(
+                      key: ValueKey('vector-map-$layerRevision'),
+                      theme: vectorStyle!.theme,
+                      tileProviders: vectorStyle!.providers,
+                      sprites: vectorStyle!.sprites,
                     ),
-                  ...venues
-                      .where((v) => v['data']['latitude'] != null)
-                      .map(
-                        (v) => Marker(
-                          point: LatLng(
-                            (v['data']['latitude'] as num).toDouble(),
-                            (v['data']['longitude'] as num).toDouble(),
-                          ),
-                          width: 48,
-                          height: 48,
+                  MarkerLayer(
+                    markers: [
+                      if (position != null)
+                        Marker(
+                          point: position!,
+                          width: 28,
+                          height: 28,
                           child: Semantics(
-                            button: true,
-                            label: tx(s(v['data']['name'])),
-                            child: Tooltip(
-                              message: s(v['data']['name']),
-                              child: Material(
-                                color: purple,
-                                shape: const CircleBorder(),
-                                elevation: 4,
-                                child: InkWell(
-                                  customBorder: const CircleBorder(),
-                                  onTap: () => route(
-                                    context,
-                                    VenuePage(api: widget.api, id: s(v['id'])),
-                                  ),
-                                  child: const Icon(
-                                    Icons.storefront_outlined,
-                                    color: Colors.white,
-                                    size: 25,
+                            label: tx('Вы здесь'),
+                            child: Icon(
+                              Icons.my_location_rounded,
+                              color: Colors.blue,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                      ...venues
+                          .where((v) => v['data']['latitude'] != null)
+                          .map(
+                            (v) => Marker(
+                              point: LatLng(
+                                (v['data']['latitude'] as num).toDouble(),
+                                (v['data']['longitude'] as num).toDouble(),
+                              ),
+                              width: 48,
+                              height: 48,
+                              child: Semantics(
+                                button: true,
+                                label: tx(s(v['data']['name'])),
+                                child: Tooltip(
+                                  message: s(v['data']['name']),
+                                  child: Material(
+                                    color: purple,
+                                    shape: const CircleBorder(),
+                                    elevation: 4,
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () => route(
+                                        context,
+                                        VenuePage(
+                                          api: widget.api,
+                                          id: s(v['id']),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.storefront_outlined,
+                                        color: Colors.white,
+                                        size: 25,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
+                    ],
+                  ),
+                  MapCredits(attribution: attribution),
                 ],
               ),
-              MapCredits(attribution: attribution),
+              if (loadingStyle || styleError != null || !tilesLoaded)
+                Positioned.fill(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Panel(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (styleError == null && tileError == null) ...[
+                              const SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              const AppText('Загружаем карту…'),
+                            ] else ...[
+                              Icon(Icons.map_outlined, color: purple, size: 34),
+                              const SizedBox(height: 10),
+                              AppText(
+                                styleError ?? tileError!,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 10),
+                              FilledButton.icon(
+                                key: const ValueKey('retry-map'),
+                                onPressed: retryMap,
+                                icon: const Icon(Icons.refresh),
+                                label: const AppText('Повторить'),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (tilesLoaded && tileError != null)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  top: 10,
+                  child: Panel(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: AppText(
+                            tileError!,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: retryMap,
+                          child: const AppText('Повторить'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

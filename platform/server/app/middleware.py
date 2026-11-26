@@ -37,7 +37,7 @@ class Protection:
         request = Request(scope)
         path = scope['path']
         cache = 'no-store' if path.startswith('/api/') else (
-            'no-cache' if path in ('/', '/index.html', '/flutter_bootstrap.js', '/version.json', '/firebase-messaging-sw.js') else None)
+            'no-cache' if path in ('/', '/index.html', '/flutter_bootstrap.js', '/main.dart.js', '/flutter.js', '/manifest.json', '/version.json', '/firebase-messaging-sw.js') else None)
         headers = self.encoded + ([(b'cache-control', cache.encode())] if cache else [])
         replaced = {name for name, _ in headers}
 
